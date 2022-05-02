@@ -13,6 +13,19 @@ type Props = {
 };
 
 export const Provider = ({ children }: Props) => {
+  const createRefs = useCallback(() => {
+    const arr = React.Children.map(children, (element) => {
+      const result = getChildren(element);
+      return Array.isArray(result) ? [element, ...result] : result;
+    });
+
+    return arr?.map((Child) => {
+      const newRef = createRef();
+
+      return newRef;
+    });
+  }, []);
+
   const getChildren = useCallback((element: React.ReactNode) => {
     if (!React.isValidElement(element)) return element;
 
@@ -27,33 +40,29 @@ export const Provider = ({ children }: Props) => {
     });
   }, []);
 
-  const createRefs = useCallback(() => {
-    const arr = React.Children.map(children, (element) => {
-      const result = getChildren(element);
-      return Array.isArray(result) ? [element, ...result] : result;
-    });
+  const getSubTree = useCallback((element: React.ReactNode) => {
+    if (!React.isValidElement(element)) return element;
 
-    return arr?.map((Child) => {
-      const newRef = createRef();
+    const { props } = element;
 
-      return newRef;
-    });
-  }, []);
-
-  console.log(createRefs());
-
-  const childArr = useMemo(() => {
-    console.log(
-      React.Children.map(children, (element) => {
-        const result = getChildren(element);
-        return Array.isArray(result) ? [element, ...result] : result;
-      })
-    );
-    return React.Children.map(children, (element) => {
-      const result = getChildren(element);
-      return Array.isArray(result) ? [element, ...result] : result;
+    return React.Children.map(props.children, (element: React.ReactNode) => {
+      if (!React.isValidElement(element)) return element;
+      const myRef = createRef();
+      const childElement = React.createElement(
+        element.type,
+        { ref: myRef },
+        element.props.children
+      );
+      console.log(childElement);
+      return childElement;
     });
   }, []);
 
-  return <>{children}</>;
+  return (
+    <>
+      {React.Children.map(children, (Child) => {
+        return getSubTree(Child);
+      })}
+    </>
+  );
 };
