@@ -5,9 +5,15 @@ function App() {
   return (
     <Provider>
       <button>
-        <p>hello world</p>
+        <div>
+          <div>hello world</div>
+        </div>
       </button>
-      <button>hello world nr 2</button>
+      <div>
+        <div>
+          <input />
+        </div>
+      </div>
     </Provider>
   );
 }
