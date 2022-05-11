@@ -1,22 +1,12 @@
 import * as React from "react";
-import { createRef, ReactNode, useCallback, useMemo } from "react";
+import { createRef, ReactNode, useCallback, useMemo, useRef } from "react";
+import ReactDOM from "react-dom";
+import { v4 as uuid } from "uuid";
 
 export const useSubTree = () => {
-  const createRefs = useCallback(
-    (children: React.ReactNode | React.ReactNode[]) => {
-      const arr = React.Children.map(children, (element) => {
-        const result = getChildren(element);
-        return Array.isArray(result) ? [element, ...result] : result;
-      });
-
-      return arr?.map((Child) => {
-        const newRef = createRef();
-
-        return newRef;
-      });
-    },
-    []
-  );
+  let ids = useMemo(() => {
+    return new Map();
+  }, []);
 
   const getChildren = useCallback((element: React.ReactNode) => {
     if (!React.isValidElement(element)) return element;
@@ -32,6 +22,7 @@ export const useSubTree = () => {
     });
   }, []);
 
+  //returns a children subtree of any component as a React Element
   const getSubTree = useCallback(
     (
       children: React.ReactNode | React.ReactNode[]
@@ -39,13 +30,48 @@ export const useSubTree = () => {
       return React.Children.map(children, (element: React.ReactNode) => {
         if (!React.isValidElement(element)) return element;
 
-        const { props } = element;
+        const { props, type } = element;
+        let childElement: React.ReactNode;
 
-        const myRef = createRef();
+        const myId = uuid();
+        if (!ids.has(props)) ids.set(element, myId);
 
-        const childElement: React.ReactNode = React.createElement(
-          element.type,
-          { ref: myRef },
+        function handleSubmit(e: any) {
+          if (props.onSubmit) props.onSubmit(e);
+          console.log("You clicked submit for the injected function.");
+        }
+
+        const ref = createRef();
+
+        childElement = React.cloneElement(
+          element,
+          element.type === "form"
+            ? {
+                ...props,
+                onSubmit: handleSubmit,
+                uuid: myId,
+                ref: ref,
+              }
+            : {
+                ...props,
+                ref: ref,
+                onClick: (e: any) => {
+                  console.log(
+                    "the ",
+                    element.type,
+                    " with id ",
+                    myId,
+                    " was clicked on ",
+                    new Date()
+                  );
+                  if (props.onClick) {
+                    props.onClick(e);
+                  }
+                  console.log(e);
+                },
+
+                uuid: myId,
+              },
           React.Children.map(
             props.children,
             (
@@ -66,12 +92,23 @@ export const useSubTree = () => {
             }
           )
         );
+
+        if (typeof type === "function") {
+          if (childElement.props.children) {
+            console.log(
+              "first child in dom",
+              ReactDOM.findDOMNode(childElement.props.children[0].ref.current)
+            );
+          }
+        }
+
+        console.log(childElement);
         return childElement;
       });
     },
-    []
+    [ids]
   );
   return useMemo(() => {
-    return { getSubTree, getChildren, createRefs };
-  }, [getSubTree]);
+    return { getSubTree, getChildren, ids };
+  }, [getSubTree, ids, getChildren]);
 };
