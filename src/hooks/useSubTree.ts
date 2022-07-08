@@ -1,12 +1,18 @@
 import * as React from "react";
-import { createRef, ReactNode, useCallback, useMemo, useRef } from "react";
-import ReactDOM from "react-dom";
+import {
+  createElement,
+  ReactNode,
+  useCallback,
+  useContext,
+  useMemo,
+} from "react";
 import { v4 as uuid } from "uuid";
+import { ReducerActionEnum } from "../reducer/reducer";
+import { PossibleAction } from "../types/actions";
+import { DataContext } from "../components/Provider";
 
 export const useSubTree = () => {
-  let ids = useMemo(() => {
-    return new Map();
-  }, []);
+  const { dispatch } = useContext(DataContext);
 
   const getChildren = useCallback((element: React.ReactNode) => {
     if (!React.isValidElement(element)) return element;
@@ -27,88 +33,124 @@ export const useSubTree = () => {
     (
       children: React.ReactNode | React.ReactNode[]
     ): React.ReactNode | React.ReactNode[] => {
-      return React.Children.map(children, (element: React.ReactNode) => {
-        if (!React.isValidElement(element)) return element;
-
-        const { props, type } = element;
-        let childElement: React.ReactNode;
-
-        const myId = uuid();
-        if (!ids.has(props)) ids.set(element, myId);
-
+      //define clone function
+      function clone(element: React.ReactElement, elementId: string) {
+        //Overwrite submit function, but keep old functionality
         function handleSubmit(e: any) {
           if (props.onSubmit) props.onSubmit(e);
           console.log("You clicked submit for the injected function.");
         }
 
-        const ref = createRef();
+        const { props, type } = element;
 
-        childElement = React.cloneElement(
+        dispatch({
+          type: ReducerActionEnum.UPDATE_IDS,
+          newIdObject: {
+            id: elementId,
+            element: element,
+          },
+        });
+
+        return React.cloneElement(
           element,
-          element.type === "form"
+          type === "form"
             ? {
                 ...props,
                 onSubmit: handleSubmit,
-                uuid: myId,
-                ref: ref,
+                uuid: elementId,
               }
             : {
                 ...props,
-                ref: ref,
                 onClick: (e: any) => {
                   console.log(
                     "the ",
                     element.type,
                     " with id ",
-                    myId,
+                    elementId,
                     " was clicked on ",
                     new Date()
                   );
                   if (props.onClick) {
                     props.onClick(e);
                   }
+                  dispatch({
+                    type: ReducerActionEnum.UPDATE_ACTIONS,
+                    newUserAction: {
+                      actionName: PossibleAction.CLICK,
+                      timestamp: e.timestamp,
+                    },
+                  });
+
                   console.log(e);
                 },
 
-                uuid: myId,
+                uuid: elementId,
               },
-          React.Children.map(
-            props.children,
-            (
-              grandchild:
-                | string
-                | number
-                | boolean
-                | React.ReactElement<
-                    any,
-                    string | React.JSXElementConstructor<any>
-                  >
-                | React.ReactFragment
-                | React.ReactPortal
-                | null
-                | undefined
-            ) => {
-              return getSubTree(grandchild);
-            }
-          )
+          //add children and recursively call this function
+          React.Children.map(props.children, (grandchild: React.ReactNode) => {
+            return getSubTree(grandchild);
+          })
         );
+      }
 
+      return React.Children.map(children, (element: React.ReactNode) => {
+        //Check if element is an element that React can render
+        if (!React.isValidElement(element)) return element;
+
+        //destructure element properties
+        const { props, type } = element;
+
+        //assign unique id
+        const elementId = uuid();
+
+        //create new ReactNode object to save created / copied element into
+        let childElement: React.ReactNode;
+
+        //if child is functional component, add span around it to be able to add onClick function
         if (typeof type === "function") {
-          if (childElement.props.children) {
-            console.log(
-              "first child in dom",
-              ReactDOM.findDOMNode(childElement.props.children[0].ref.current)
-            );
-          }
+          //create new span around functional element
+          childElement = createElement(
+            "span",
+            {
+              onClick: (e: any) => {
+                console.log(
+                  "the ",
+                  type,
+                  " with id ",
+                  elementId,
+                  " was clicked on ",
+                  new Date()
+                );
+                if (props.onClick) {
+                  props.onClick(e);
+                }
+
+                dispatch({
+                  type: ReducerActionEnum.UPDATE_ACTIONS,
+                  newUserAction: {
+                    actionName: PossibleAction.CLICK,
+                    timestamp: e.timestamp,
+                  },
+                });
+                console.log(e);
+              },
+              style: { width: "auto" },
+            },
+            //clone actual functional component
+            clone(element, elementId)
+          );
+        } else {
+          //clone element to replace props
+          childElement = clone(element, elementId);
         }
 
-        console.log(childElement);
         return childElement;
       });
     },
-    [ids]
+    [dispatch]
   );
+
   return useMemo(() => {
-    return { getSubTree, getChildren, ids };
-  }, [getSubTree, ids, getChildren]);
+    return { getSubTree, getChildren };
+  }, [getSubTree, getChildren]);
 };

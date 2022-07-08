@@ -1,5 +1,10 @@
 import React from "react";
-import { CustomButton, CustomInput, Provider } from "./components/Provider";
+import {
+  CustomButton,
+  CustomInput,
+  PrintDataButton,
+  Provider,
+} from "./components/Provider";
 
 function handleSubmit(e: { preventDefault: () => void }) {
   e.preventDefault();
@@ -9,6 +14,9 @@ function handleSubmit(e: { preventDefault: () => void }) {
 function App() {
   return (
     <Provider>
+      <a className="button" download="name.png">
+        Download File
+      </a>
       <CustomButton>
         <div>
           <div>hello world</div>
