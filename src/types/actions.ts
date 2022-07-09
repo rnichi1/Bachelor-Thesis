@@ -1,10 +1,11 @@
 //action type with saved data about an action done by a user
 export type action = {
   timestamp: number;
-  actionName: PossibleAction;
+  actionType: PossibleAction;
+  elementId: string;
 };
 
-//enum for possible action for a user
+//enum for possible user actions
 export enum PossibleAction {
   CLICK,
   SUBMIT,

@@ -1,19 +1,10 @@
 import * as React from "react";
-import {
-  createElement,
-  ReactNode,
-  useCallback,
-  useContext,
-  useMemo,
-} from "react";
+import { createElement, ReactNode, useCallback, useMemo } from "react";
 import { v4 as uuid } from "uuid";
 import { ReducerActionEnum } from "../reducer/reducer";
-import { PossibleAction } from "../types/actions";
-import { DataContext } from "../components/Provider";
+import { action, PossibleAction } from "../types/actions";
 
 export const useSubTree = () => {
-  const { dispatch } = useContext(DataContext);
-
   const getChildren = useCallback((element: React.ReactNode) => {
     if (!React.isValidElement(element)) return element;
 
@@ -31,7 +22,12 @@ export const useSubTree = () => {
   //returns a children subtree of any component as a React Element
   const getSubTree = useCallback(
     (
-      children: React.ReactNode | React.ReactNode[]
+      children: React.ReactNode | React.ReactNode[],
+      dispatch: React.Dispatch<{
+        type: ReducerActionEnum;
+        newUserAction?: action | undefined;
+        newIdObject?: { id: string; element: React.ReactNode } | undefined;
+      }>
     ): React.ReactNode | React.ReactNode[] => {
       //define clone function
       function clone(element: React.ReactElement, elementId: string) {
@@ -42,14 +38,6 @@ export const useSubTree = () => {
         }
 
         const { props, type } = element;
-
-        dispatch({
-          type: ReducerActionEnum.UPDATE_IDS,
-          newIdObject: {
-            id: elementId,
-            element: element,
-          },
-        });
 
         return React.cloneElement(
           element,
@@ -76,8 +64,17 @@ export const useSubTree = () => {
                   dispatch({
                     type: ReducerActionEnum.UPDATE_ACTIONS,
                     newUserAction: {
-                      actionName: PossibleAction.CLICK,
-                      timestamp: e.timestamp,
+                      actionType: PossibleAction.CLICK,
+                      timestamp: e.nativeEvent.timeStamp,
+                      elementId: elementId,
+                    },
+                  });
+
+                  dispatch({
+                    type: ReducerActionEnum.UPDATE_IDS,
+                    newIdObject: {
+                      id: elementId,
+                      element: element,
                     },
                   });
 
@@ -88,7 +85,7 @@ export const useSubTree = () => {
               },
           //add children and recursively call this function
           React.Children.map(props.children, (grandchild: React.ReactNode) => {
-            return getSubTree(grandchild);
+            return getSubTree(grandchild, dispatch);
           })
         );
       }
@@ -107,7 +104,7 @@ export const useSubTree = () => {
         let childElement: React.ReactNode;
 
         //if child is functional component, add span around it to be able to add onClick function
-        if (typeof type === "function") {
+        if (typeof type === "function" || typeof type === "object") {
           //create new span around functional element
           childElement = createElement(
             "span",
@@ -128,13 +125,22 @@ export const useSubTree = () => {
                 dispatch({
                   type: ReducerActionEnum.UPDATE_ACTIONS,
                   newUserAction: {
-                    actionName: PossibleAction.CLICK,
-                    timestamp: e.timestamp,
+                    actionType: PossibleAction.CLICK,
+                    timestamp: e.nativeEvent.timeStamp,
+                    elementId: elementId,
+                  },
+                });
+
+                dispatch({
+                  type: ReducerActionEnum.UPDATE_IDS,
+                  newIdObject: {
+                    id: elementId,
+                    element: element,
                   },
                 });
                 console.log(e);
               },
-              style: { width: "auto" },
+              uuid: elementId,
             },
             //clone actual functional component
             clone(element, elementId)
@@ -147,7 +153,7 @@ export const useSubTree = () => {
         return childElement;
       });
     },
-    [dispatch]
+    []
   );
 
   return useMemo(() => {

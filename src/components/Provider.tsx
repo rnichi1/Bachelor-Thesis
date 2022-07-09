@@ -7,6 +7,7 @@ import {
   ReducerActionEnum,
   ReducerState,
 } from "../reducer/reducer";
+import ErrorBoundary from "../helpers/ErrorBoundary";
 
 type Props = {
   children?: React.ReactNode | React.ReactNode[];
@@ -31,7 +32,7 @@ export const Provider = ({ children }: Props) => {
     <>
       <DataContext.Provider value={{ state, dispatch }}>
         <PrintDataButton />
-        {children ? getSubTree(children) : null}
+        {children ? getSubTree(children, dispatch) : null}
       </DataContext.Provider>
     </>
   );
@@ -41,8 +42,10 @@ export const CustomButton = ({ children }: Props) => {
   return <button>{children}</button>;
 };
 
+//Button to test functionality in console (log saved state information)
 export const PrintDataButton = ({ children }: Props) => {
   const { state } = useContext(DataContext);
+
   return (
     <button
       style={{

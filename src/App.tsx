@@ -5,6 +5,7 @@ import {
   PrintDataButton,
   Provider,
 } from "./components/Provider";
+import ClassComponentTest from "./components/ClassComponentTest";
 
 function handleSubmit(e: { preventDefault: () => void }) {
   e.preventDefault();
@@ -29,6 +30,7 @@ function App() {
           <button type={"submit"}> submit </button>
         </form>
       </div>
+      <ClassComponentTest />
     </Provider>
   );
 }
