@@ -1,8 +1,13 @@
 {
-  "name": "my-app",
-  "version": "0.1.0",
+  "name": "bachelor_thesis_experiment_remus_nichiteanu",
+  "version": "0.0.1",
+  "description": "A testing library for collecting UI data",
+  "author": "Remus Nichiteanu",
   "private": true,
   "dependencies": {
+    "@rollup/plugin-commonjs": "^22.0.1",
+    "@rollup/plugin-node-resolve": "^13.3.0",
+    "@rollup/plugin-typescript": "^8.3.3",
     "@types/jest": "^27.0.1",
     "@types/node": "^16.7.13",
     "@types/react": "^18.0.0",
@@ -12,6 +17,8 @@
     "react": "^18.1.0",
     "react-dom": "^18.1.0",
     "react-scripts": "5.0.1",
+    "rollup": "^2.76.0",
+    "rollup-plugin-dts": "^4.2.2",
     "typescript": "^4.4.2",
     "uuid": "^8.3.2"
   },
@@ -19,7 +26,8 @@
     "dev": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "rollup": "rollup -c"
   },
   "eslintConfig": {
     "extends": [
@@ -38,5 +46,11 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "files": [
+    "dist"
+  ],
+  "types": "dist/index.d.ts"
 }

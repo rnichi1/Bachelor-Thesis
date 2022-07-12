@@ -4,7 +4,7 @@ import {
   CustomInput,
   PrintDataButton,
   Provider,
-} from "./components/Provider";
+} from "./components/Provider/Provider";
 import ClassComponentTest from "./components/ClassComponentTest";
 
 function handleSubmit(e: { preventDefault: () => void }) {

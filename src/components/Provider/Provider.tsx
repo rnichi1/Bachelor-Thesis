@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useReducer } from "react";
-import { useSubTree } from "../hooks/useSubTree";
-import { action } from "../types/actions";
+import { useSubTree } from "../../hooks/useSubTree";
+import { action } from "../../types/actions";
 import {
   initialState,
   reducer,
   ReducerActionEnum,
   ReducerState,
-} from "../reducer/reducer";
-import ErrorBoundary from "../helpers/ErrorBoundary";
+} from "../../reducer/reducer";
+import ErrorBoundary from "../../helpers/ErrorBoundary";
 
 type Props = {
   children?: React.ReactNode | React.ReactNode[];
@@ -23,7 +23,7 @@ export const DataContext = createContext<{
   }>;
 }>({ state: { actions: [], ids: new Map() }, dispatch: () => {} });
 
-export const Provider = ({ children }: Props) => {
+const Provider = ({ children }: Props) => {
   const { getSubTree } = useSubTree();
 
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -73,3 +73,5 @@ type InputProps = {
 export const CustomInput = ({ children, placeholder }: InputProps) => {
   return <input placeholder={placeholder}>{children}</input>;
 };
+
+export default Provider;
