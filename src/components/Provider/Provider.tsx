@@ -7,11 +7,7 @@ import {
   ReducerActionEnum,
   ReducerState,
 } from "../../reducer/reducer";
-import ErrorBoundary from "../../helpers/ErrorBoundary";
 
-type Props = {
-  children?: React.ReactNode | React.ReactNode[];
-};
 
 //Context to save GUI state data in global state
 export const DataContext = createContext<{
@@ -23,29 +19,33 @@ export const DataContext = createContext<{
   }>;
 }>({ state: { actions: [], ids: new Map() }, dispatch: () => {} });
 
-const Provider = ({ children }: Props) => {
+const Provider = ({ children }: {
+  children?: React.ReactNode | React.ReactNode[];
+}) => {
   const { getSubTree } = useSubTree();
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
   return (
     <>
-    <ErrorBoundary>
       <DataContext.Provider value={{ state, dispatch }}>
         <PrintDataButton />
         {children ? getSubTree(children, dispatch) : null}
       </DataContext.Provider>
-    </ErrorBoundary>
     </>
   );
 };
 
-export const CustomButton = ({ children }: Props) => {
+export const CustomButton = ({ children }: {
+  children?: React.ReactNode | React.ReactNode[];
+}) => {
   return <button>{children}</button>;
 };
 
 //Button to test functionality in console (log saved state information)
-export const PrintDataButton = ({ children }: Props) => {
+export const PrintDataButton = ({ children }: {
+  children?: React.ReactNode | React.ReactNode[];
+}) => {
   const { state } = useContext(DataContext);
 
   return (

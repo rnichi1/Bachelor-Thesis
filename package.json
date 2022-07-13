@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/rnichi1"
   },
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "A testing library for collecting UI data",
   "author": "Remus Nichiteanu",
   "private": false,
@@ -15,19 +15,19 @@
     "@rollup/plugin-typescript": "^8.3.3",
     "@types/jest": "^27.0.1",
     "@types/node": "^18.0.3",
-    "@types/uuid": ">=8.0.0",
-    "typescript": ">=4.0.0",
-    "@types/react": ">=16.8.0",
-    "@types/react-dom": ">=16.8.0",
-    "react-scripts": ">=5.0.0"
+    "@types/uuid": "^8.0.0",
+    "typescript": "^4.0.0",
+    "@types/react": "^16.8.0",
+    "@types/react-dom": "^16.8.0",
+    "react-scripts": "^5.0.0"
   },
   "peerDependencies": {
-    "react": ">=16.8.0",
-    "react-dom": ">=16.8.0",
-    "react-router-dom": ">=5.0.0"
+    "react": "^16.8.0",
+    "react-dom": "^16.8.0",
+    "react-router-dom": "^5.0.0"
   },
   "dependencies": {
-    "uuid": "^8.0.0",
+    "uuid": "^8.0.0"
   },
   "scripts": {
     "dev": "react-scripts start",
