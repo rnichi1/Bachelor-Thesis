@@ -1,38 +1,25 @@
-import React from "react";
-import {
-  CustomButton,
-  CustomInput,
-  PrintDataButton,
-  Provider,
-} from "./components/Provider/Provider";
-import ClassComponentTest from "./components/ClassComponentTest";
+import React from 'react';
+import {render} from "react-dom";
+import {Provider} from "./components";
 
-function handleSubmit(e: { preventDefault: () => void }) {
-  e.preventDefault();
-  console.log("You clicked submit for the original function.");
-}
-
-function App() {
-  return (
+const App = () => (
     <Provider>
-      <a className="button" download="name.png">
-        Download File
-      </a>
-      <CustomButton>
         <div>
-          <div>hello world</div>
+            <div>
+                <button>
+                    this is a normal button
+                </button>
+            </div>
         </div>
-      </CustomButton>
-      <div>
-        <form onSubmit={handleSubmit}>
-          <CustomInput placeholder={"email"} />
-          <input placeholder={"password"} onInput={() => "first input"} />
-          <button type={"submit"}> submit </button>
-        </form>
-      </div>
-      <ClassComponentTest />
+        <Button/>
     </Provider>
-  );
-}
+);
 
 export default App;
+
+class Button extends React.Component<any, any> {
+
+    render() {
+        return (<div><button>this is a class component button</button></div>)
+    }
+}

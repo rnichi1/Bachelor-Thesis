@@ -5,10 +5,9 @@ import dts from "rollup-plugin-dts";
 
 const packageJson = require("./package.json");
 
-//Handles bundling as npm library
 export default [
   {
-    input: "src/index.ts",
+    input: "src/index.tsx",
     output: [
       {
         file: packageJson.main,

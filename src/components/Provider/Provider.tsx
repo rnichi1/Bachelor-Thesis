@@ -30,10 +30,12 @@ const Provider = ({ children }: Props) => {
 
   return (
     <>
+    <ErrorBoundary>
       <DataContext.Provider value={{ state, dispatch }}>
         <PrintDataButton />
         {children ? getSubTree(children, dispatch) : null}
       </DataContext.Provider>
+    </ErrorBoundary>
     </>
   );
 };

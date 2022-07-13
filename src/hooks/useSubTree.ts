@@ -5,20 +5,6 @@ import { ReducerActionEnum } from "../reducer/reducer";
 import { action, PossibleAction } from "../types/actions";
 
 export const useSubTree = () => {
-  const getChildren = useCallback((element: React.ReactNode) => {
-    if (!React.isValidElement(element)) return element;
-
-    const { props } = element;
-
-    return React.Children.map(props.children, (element) => {
-      const grandChildren: (ReactNode | ReactNode[])[] = getChildren(element);
-
-      return Array.isArray(grandChildren)
-        ? [element, ...grandChildren]
-        : grandChildren;
-    });
-  }, []);
-
   //returns a children subtree of any component as a React Element
   const getSubTree = useCallback(
     (
@@ -157,6 +143,6 @@ export const useSubTree = () => {
   );
 
   return useMemo(() => {
-    return { getSubTree, getChildren };
-  }, [getSubTree, getChildren]);
+    return { getSubTree };
+  }, [getSubTree]);
 };

@@ -32,7 +32,7 @@ export const reducer: (
     newIdObject?: { id: string; element: React.ReactNode };
   }
 ) => {
-  console.log("in reducer", action.type, action);
+
   switch (action.type) {
     case ReducerActionEnum.UPDATE_ACTIONS:
       return {
