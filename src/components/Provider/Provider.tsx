@@ -8,7 +8,6 @@ import {
   ReducerState,
 } from "../../reducer/reducer";
 
-
 //Context to save GUI state data in global state
 export const DataContext = createContext<{
   state: ReducerState;
@@ -19,7 +18,9 @@ export const DataContext = createContext<{
   }>;
 }>({ state: { actions: [], ids: new Map() }, dispatch: () => {} });
 
-const Provider = ({ children }: {
+const Provider = ({
+  children,
+}: {
   children?: React.ReactNode | React.ReactNode[];
 }) => {
   const { getSubTree } = useSubTree();
@@ -30,20 +31,24 @@ const Provider = ({ children }: {
     <>
       <DataContext.Provider value={{ state, dispatch }}>
         <PrintDataButton />
-        {children ? getSubTree(children, dispatch) : null}
+        {children ? getSubTree(children, dispatch, state) : null}
       </DataContext.Provider>
     </>
   );
 };
 
-export const CustomButton = ({ children }: {
+export const CustomButton = ({
+  children,
+}: {
   children?: React.ReactNode | React.ReactNode[];
 }) => {
   return <button>{children}</button>;
 };
 
 //Button to test functionality in console (log saved state information)
-export const PrintDataButton = ({ children }: {
+export const PrintDataButton = ({
+  children,
+}: {
   children?: React.ReactNode | React.ReactNode[];
 }) => {
   const { state } = useContext(DataContext);
