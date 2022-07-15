@@ -12,82 +12,94 @@ import { PossibleAction } from "../../types/actions";
 import { DataContext } from "./Provider";
 import { useSubTree } from "../../hooks/useSubTree";
 
+//This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
 export const IdWrapper = ({
   children,
   parentId,
+  loopIndex,
 }: {
   children: React.ReactNode | React.ReactNode[];
   parentId: string;
+  loopIndex: number;
 }) => {
-  const id = useId();
+  /* This id could be used instead of the parent + child info. useId creates an Id with the react-tree as well and could be used as a native, react specific implementation of id, but due to
+  /* changes in the react API in the future, this could break quite easily as it is not necessarily provided to be used as an ID in the way this library employs it.
+   const id = useId();
+  */
 
-  const { dispatch, state } = useContext(DataContext);
-
+  //Hook for getting and setting persistent state
+  const { dispatch } = useContext(DataContext);
+  //Hook for getting the function for traversing the tree
   const { getSubTree } = useSubTree();
 
-  return React.Children.map(children, (element: React.ReactNode, index) => {
+  return React.Children.map(children, (element: React.ReactNode) => {
     if (!React.isValidElement(element)) return element;
 
     const { props, type } = element;
 
-    let componentId = parentId;
+    //add child info to id
+    let componentId = parentId + "-" + type + "_" + loopIndex;
 
     let childElement: React.ReactNode;
     //add span to all functional components and class components, except routes, such that click events are possible
-    if (
-      (typeof type === "function" || typeof type === "object") &&
-      !((type as Function).name === "Route")
-    ) {
-      componentId = parentId + "_fc";
+    if (typeof type === "function" || typeof type === "object") {
+      //mark it as the actual functional component with the "fc" in the id
+      componentId =
+        parentId + "-" + "fc_" + (type as Function).name + "_" + loopIndex;
 
-      //create new span around functional element
-      const spanWrapper = createElement(
-        "span",
-        {
-          onClick: (e: any) => {
-            e.persist();
-            console.log(
-              "the ",
-              type,
-              " was clicked on ",
-              new Date(),
-              ". Here is the element: ",
-              element
-            );
-            if (props.onClick) {
-              props.onClick(e);
-            }
+      //check that it is not a Route component
+      if (!((type as Function).name === "Route")) {
+        //A new span around functional component to add events to it, it acts as a proxy for the functional component
+        const spanWrapper = createElement(
+          "span",
+          {
+            onClick: (e: any) => {
+              e.persist();
+              console.log(
+                "the ",
+                type,
+                " was clicked on ",
+                new Date(),
+                ". Here is the element: ",
+                element
+              );
+              if (props.onClick) {
+                props.onClick(e);
+              }
 
-            dispatch({
-              type: ReducerActionEnum.UPDATE_ACTIONS,
-              newUserAction: {
-                actionType: PossibleAction.CLICK,
-                timestamp: e.nativeEvent.timeStamp,
-                elementId: id,
-              },
-            });
+              dispatch({
+                type: ReducerActionEnum.UPDATE_ACTIONS,
+                newUserAction: {
+                  actionType: PossibleAction.CLICK,
+                  timestamp: e.nativeEvent.timeStamp,
+                  elementId: componentId,
+                },
+              });
 
-            dispatch({
-              type: ReducerActionEnum.UPDATE_IDS,
-              newIdObject: {
-                id: id,
-                element: element,
-              },
-            });
-            console.log(e);
+              dispatch({
+                type: ReducerActionEnum.UPDATE_IDS,
+                newIdObject: {
+                  id: componentId,
+                  element: element,
+                },
+              });
+              console.log(e);
+            },
           },
-        },
-        clone(element, index)
-      );
-      childElement = spanWrapper;
+          clone(element, componentId)
+        );
+        childElement = spanWrapper;
+      } else {
+        childElement = clone(element, componentId);
+      }
     } else {
-      childElement = clone(element, index);
+      childElement = clone(element, componentId);
     }
 
     return childElement;
   });
 
-  function clone(element: React.ReactElement, index: number) {
+  function clone(element: React.ReactElement, componentId: string) {
     //Overwrite submit function, but keep old functionality
     function handleSubmit(e: any) {
       if (props.onSubmit) props.onSubmit(e);
@@ -117,7 +129,7 @@ export const IdWrapper = ({
         ? {
             ...props,
             onSubmit: handleSubmit,
-            uuid: id,
+            uuid: componentId,
           }
         : {
             ...props,
@@ -129,7 +141,7 @@ export const IdWrapper = ({
                 "the ",
                 element.type,
                 " with id ",
-                id,
+                componentId,
                 " was clicked on ",
                 new Date(),
                 ". Here is the element: ",
@@ -143,14 +155,14 @@ export const IdWrapper = ({
                 newUserAction: {
                   actionType: PossibleAction.CLICK,
                   timestamp: e.nativeEvent.timeStamp,
-                  elementId: id,
+                  elementId: componentId,
                 },
               });
 
               dispatch({
                 type: ReducerActionEnum.UPDATE_IDS,
                 newIdObject: {
-                  id: id,
+                  id: componentId,
                   element: element,
                 },
               });
@@ -158,12 +170,11 @@ export const IdWrapper = ({
               console.log(e);
             },
 
-            uuid: id,
+            uuid: componentId,
           },
       //add children and recursively call this function
-      React.Children.map(children, (grandchild: React.ReactNode) => {
-        return getSubTree(grandchild, dispatch, parentId + index);
-      })
+
+      getSubTree(children, dispatch, componentId)
     );
   }
 };

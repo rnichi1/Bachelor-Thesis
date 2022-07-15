@@ -1,16 +1,7 @@
 import * as React from "react";
-import {
-  createElement,
-  ForwardedRef,
-  ReactElement,
-  ReactNode,
-  useCallback,
-  useId,
-  useMemo,
-} from "react";
-import { v4 as uuid } from "uuid";
-import { ReducerActionEnum, ReducerState } from "../reducer/reducer";
-import { action, PossibleAction } from "../types/actions";
+import { createElement, useCallback, useMemo, useState } from "react";
+import { ReducerActionEnum } from "../reducer/reducer";
+import { action } from "../types/actions";
 import { IdWrapper } from "../components/Provider/IdWrapper";
 
 export const useSubTree = () => {
@@ -27,7 +18,7 @@ export const useSubTree = () => {
     ): React.ReactNode | React.ReactNode[] => {
       //define clone function
 
-      return React.Children.map(children, (element: React.ReactNode) => {
+      return React.Children.map(children, (element: React.ReactNode, i) => {
         //Check if element is an element that React can render
         if (!React.isValidElement(element)) return element;
 
@@ -47,6 +38,7 @@ export const useSubTree = () => {
           {
             ...props,
             parentId: parentId,
+            loopIndex: i,
           },
           element
         );
