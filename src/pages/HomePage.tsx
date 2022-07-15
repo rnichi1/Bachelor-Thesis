@@ -6,6 +6,15 @@ export const HomePage = () => {
   return (
     <div>
       <div>this is the home page</div>
+      <div>a second div</div>
+      <div>
+        <div>and fourth</div>
+        <input />
+      </div>
+      <div>
+        <div>and second nested div</div>
+      </div>
+
       <Link to={"/project"}>
         <p>hi</p>
       </Link>

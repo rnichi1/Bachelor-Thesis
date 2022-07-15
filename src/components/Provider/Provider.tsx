@@ -31,7 +31,7 @@ const Provider = ({
     <>
       <DataContext.Provider value={{ state, dispatch }}>
         <PrintDataButton />
-        {children ? getSubTree(children, dispatch, state) : null}
+        {children ? getSubTree(children, dispatch, "providerId") : null}
       </DataContext.Provider>
     </>
   );
