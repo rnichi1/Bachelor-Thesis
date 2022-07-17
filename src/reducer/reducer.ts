@@ -1,11 +1,7 @@
 import * as React from "react";
 
 import { action } from "../types/actions";
-
-export type ReducerState = {
-  actions: action[];
-  ids: Map<string, React.ReactNode>;
-};
+import { ReducerState } from "../types/reducerTypes";
 
 export const initialState: ReducerState = {
   actions: [],
@@ -32,7 +28,6 @@ export const reducer: (
     newIdObject?: { id: string; element: React.ReactNode };
   }
 ) => {
-
   switch (action.type) {
     case ReducerActionEnum.UPDATE_ACTIONS:
       return {

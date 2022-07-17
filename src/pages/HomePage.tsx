@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Redirect, useHistory, Link, Route } from "react-router-dom";
-import { SecondaryPage } from "./SecondaryPage";
+import { NavLink } from "react-router-dom";
+import { CustomButton } from "../components/Provider/Provider";
 
 export const HomePage = () => {
   return (
@@ -10,15 +10,17 @@ export const HomePage = () => {
       <div>
         <div>and fourth</div>
         <input />
+        <input />
+        <input />
       </div>
       <div>
         <div>and second nested div</div>
       </div>
+      <CustomButton />
 
-      <Link to={"/project"}>
+      <NavLink to={"/project"}>
         <p>hi</p>
-      </Link>
-      <Route path="/project" component={SecondaryPage} />
+      </NavLink>
     </div>
   );
 };

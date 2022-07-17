@@ -1,7 +1,8 @@
 import React from "react";
-import { Provider } from "./components";
 import { Routes } from "./Routes";
 
-const App = () => <Routes />;
+const App = () => {
+  return <Routes />;
+};
 
 export default App;

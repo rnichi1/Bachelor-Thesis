@@ -1,12 +1,13 @@
-import React, { createContext, useContext, useReducer } from "react";
+import React, { createContext, useContext } from "react";
 import { useSubTree } from "../../hooks/useSubTree";
 import { action } from "../../types/actions";
 import {
   initialState,
   reducer,
   ReducerActionEnum,
-  ReducerState,
 } from "../../reducer/reducer";
+import { usePersistedReducer } from "../../hooks/usePersistedReducer";
+import { ReducerState } from "../../types/reducerTypes";
 
 //Context to save GUI state data in global state
 export const DataContext = createContext<{
@@ -25,7 +26,12 @@ const Provider = ({
 }) => {
   const { getSubTree } = useSubTree();
 
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const reducerKey = "PROVIDER_STATE";
+  const { state, dispatch } = usePersistedReducer(
+    reducer,
+    initialState,
+    reducerKey
+  );
 
   return (
     <>
@@ -37,12 +43,12 @@ const Provider = ({
   );
 };
 
-export const CustomButton = ({
-  children,
-}: {
-  children?: React.ReactNode | React.ReactNode[];
-}) => {
-  return <button>{children}</button>;
+export const CustomButton = () => {
+  return (
+    <button>
+      <div>this is a custom button, can you see its child div?</div>
+    </button>
+  );
 };
 
 //Button to test functionality in console (log saved state information)
