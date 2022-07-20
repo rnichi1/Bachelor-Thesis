@@ -1,5 +1,5 @@
 //action type with saved data about an action done by a user
-export type action = {
+export type Action = {
   timestamp: number;
   actionType: PossibleAction;
   elementId: string;

@@ -26,7 +26,6 @@ export function usePersistedReducer(
   }
 
   useEffect(() => {
-    console.log(state);
     const stateEqual = deepEqual(prevState, state);
 
     //adjust state, such that more complicated datatypes like Map can be saved and reconstructed from localStorage
@@ -34,7 +33,6 @@ export function usePersistedReducer(
       actions: state.actions,
       ids: Array.from(state.ids),
     };
-    console.log(adjustedState);
     if (!stateEqual) {
       try {
         //Array to remove cyclic references, which stringify doesn't work with.

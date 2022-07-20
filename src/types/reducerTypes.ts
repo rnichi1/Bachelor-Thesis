@@ -1,17 +1,17 @@
 import * as React from "react";
 import { ReducerActionEnum } from "../reducer/reducer";
-import { action } from "./actions";
+import { Action } from "./actions";
 
 export type ReducerType = (
   state: ReducerState,
   action: {
     type: ReducerActionEnum;
-    newUserAction?: action;
+    newUserAction?: Action;
     newIdObject?: { id: string; element: React.ReactNode };
   }
 ) => ReducerState;
 
 export type ReducerState = {
-  actions: action[];
+  actions: Action[];
   ids: Map<string, React.ReactNode>;
 };

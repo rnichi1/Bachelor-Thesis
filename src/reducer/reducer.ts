@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { action } from "../types/actions";
+import { Action } from "../types/actions";
 import { ReducerState } from "../types/reducerTypes";
 
 export const initialState: ReducerState = {
@@ -17,14 +17,14 @@ export const reducer: (
   state: ReducerState,
   action: {
     type: ReducerActionEnum;
-    newUserAction?: action;
+    newUserAction?: Action;
     newIdObject?: { id: string; element: React.ReactNode };
   }
 ) => ReducerState = (
   state: ReducerState,
   action: {
     type: ReducerActionEnum;
-    newUserAction?: action;
+    newUserAction?: Action;
     newIdObject?: { id: string; element: React.ReactNode };
   }
 ) => {

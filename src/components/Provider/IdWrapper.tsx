@@ -9,11 +9,15 @@ import { useSubTree } from "../../hooks/useSubTree";
 export const IdWrapper = ({
   children,
   parentId,
+  xpathId,
   loopIndex,
+  xpathComponentId,
 }: {
   children: React.ReactNode | React.ReactNode[];
   parentId: string;
+  xpathId: string;
   loopIndex: number;
+  xpathComponentId: string;
 }) => {
   /* This id could be used instead of the parent + child info. useId creates an Id with the react-tree as well and could be used as a native, react specific implementation of id, but due to
   /* changes in the react API in the future, this could break quite easily as it is not necessarily provided to be used as an ID in the way this library employs it.
@@ -47,18 +51,27 @@ export const IdWrapper = ({
         !((type as Function).name === "Redirect") &&
         !((type as Function).name === "Redirect")
       ) {
-        childElement = clone((type as Function)(), componentId);
+        childElement = clone(
+          (type as Function)(),
+          componentId,
+          xpathComponentId
+        );
       } else {
-        childElement = clone(element, componentId);
+        xpathComponentId = xpathId;
+        childElement = clone(element, componentId, xpathComponentId);
       }
     } else {
-      childElement = clone(element, componentId);
+      childElement = clone(element, componentId, xpathComponentId);
     }
 
     return childElement;
   });
 
-  function clone(element: React.ReactElement, componentId: string) {
+  function clone(
+    element: React.ReactElement,
+    componentId: string,
+    xpathComponentId: string
+  ) {
     //Overwrite submit function, but keep old functionality
     function handleSubmit(e: any) {
       e.stopPropagation();
@@ -83,6 +96,7 @@ export const IdWrapper = ({
       element_children = props.children;
     }
 
+    //TODO: add xpath id to state
     return React.cloneElement(
       element,
       type === "form"
@@ -90,6 +104,7 @@ export const IdWrapper = ({
             ...props,
             onSubmit: handleSubmit,
             uuid: componentId,
+            xpathId: xpathComponentId,
           }
         : {
             ...props,
@@ -126,10 +141,11 @@ export const IdWrapper = ({
               });
             },
             uuid: componentId,
+            xpathid: xpathComponentId,
           },
-      //add children and recursively call this function
 
-      getSubTree(element_children, dispatch, componentId)
+      //add children and recursively call subTree function
+      getSubTree(element_children, dispatch, componentId, xpathComponentId)
     );
   }
 };

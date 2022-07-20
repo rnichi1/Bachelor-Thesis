@@ -1,6 +1,6 @@
-import React, { createContext, useContext } from "react";
+import React, { createContext, ReactNode, useContext } from "react";
 import { useSubTree } from "../../hooks/useSubTree";
-import { action } from "../../types/actions";
+import { Action } from "../../types/actions";
 import {
   initialState,
   reducer,
@@ -14,7 +14,7 @@ export const DataContext = createContext<{
   state: ReducerState;
   dispatch: React.Dispatch<{
     type: ReducerActionEnum;
-    newUserAction?: action | undefined;
+    newUserAction?: Action | undefined;
     newIdObject?: { id: string; element: React.ReactNode } | undefined;
   }>;
 }>({ state: { actions: [], ids: new Map() }, dispatch: () => {} });
@@ -37,7 +37,9 @@ const Provider = ({
     <>
       <DataContext.Provider value={{ state, dispatch }}>
         <PrintDataButton />
-        {children ? getSubTree(children, dispatch, "providerId") : null}
+        {children
+          ? getSubTree(children, dispatch, "providerId", "/html/body/div")
+          : null}
       </DataContext.Provider>
     </>
   );
@@ -45,18 +47,17 @@ const Provider = ({
 
 export const CustomButton = () => {
   return (
-    <button>
-      <div>this is a custom button, can you see its child div?</div>
-    </button>
+    <div>
+      <button>
+        <div>this is a custom button, can you see its child div?</div>
+        <div>this is a custom button, can you see its child div?</div>
+      </button>
+    </div>
   );
 };
 
 //Button to test functionality in console (log saved state information)
-export const PrintDataButton = ({
-  children,
-}: {
-  children?: React.ReactNode | React.ReactNode[];
-}) => {
+export const PrintDataButton = () => {
   const { state } = useContext(DataContext);
 
   return (
