@@ -48,7 +48,7 @@ const Provider = ({
 export const CustomButton = () => {
   return (
     <div>
-      <button>
+      <button style={{}}>
         <div>this is a custom button, can you see its child div?</div>
         <div>this is a custom button, can you see its child div?</div>
       </button>
