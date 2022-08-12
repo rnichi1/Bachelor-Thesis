@@ -9,6 +9,8 @@ import {
 import { usePersistedReducer } from "../../hooks/usePersistedReducer";
 import { ReducerState } from "../../types/reducerTypes";
 
+const XPATH_ID_BASE = "/html/body/div";
+
 /**Context to save GUI state data in global state*/
 export const DataContext = createContext<{
   state: ReducerState;
@@ -28,7 +30,7 @@ const Provider = ({
 }: {
   children?: React.ReactNode | React.ReactNode[];
 }) => {
-  const { getSubTree } = useSubTree();
+  const { getSubTree, getCurrentGuiState } = useSubTree();
 
   const reducerKey = "PROVIDER_STATE";
   const { state, dispatch } = usePersistedReducer(
@@ -37,13 +39,14 @@ const Provider = ({
     reducerKey
   );
 
+  const currentGuiState = getCurrentGuiState(children, XPATH_ID_BASE, state);
+
+  console.log(state.refs);
   return (
     <>
       <DataContext.Provider value={{ state, dispatch }}>
         <PrintDataButton />
-        {children
-          ? getSubTree(children, dispatch, "providerId", "/html/body/div")
-          : null}
+        {children ? getSubTree(children, dispatch, XPATH_ID_BASE) : null}
       </DataContext.Provider>
     </>
   );

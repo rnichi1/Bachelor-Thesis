@@ -11,5 +11,5 @@ export type Widget = {
   xpos: number;
   ypos: number;
   style: CSSProperties | undefined;
-  children: Widget[] | null;
+  children?: Widget[] | null;
 };

@@ -4,10 +4,14 @@ import { ReducerActionEnum } from "../reducer/reducer";
 import { Action } from "../types/actions";
 import { IdWrapper } from "../components/Provider/IdWrapper";
 import { Widget } from "../types/guiState";
+import { ReducerState } from "../types/reducerTypes";
+import { useXpathHelpers } from "../helpers/xPathHelpers";
 
 /** Custom React Hook with getSubTree function, which is used to add a higher order component to each valid component and element in the react ui tree.
  */
 export const useSubTree = () => {
+  const { getXpathId, getXpathIndexMap } = useXpathHelpers();
+
   /**
    * returns a children subtree of any component as a React Node with custom props to collect user action data.
    @param children the react component subtree
@@ -23,11 +27,8 @@ export const useSubTree = () => {
         newUserAction?: Action | undefined;
         newIdObject?: { id: string; element: React.ReactNode } | undefined;
       }>,
-      parentId: string,
       xpathId: string
     ): React.ReactNode | React.ReactNode[] => {
-      //define clone function
-
       /** occurrence of specific html elements inside children array (e.g. how many div elements are in the children array, how many input element, etc.) to know if brackets are needed, if it is 1 or less, the brackets are omitted in xPath. */
       let componentIndexMap = getXpathIndexMap(children);
       //keep track of count of already found html element types to write correct index in id
@@ -38,51 +39,14 @@ export const useSubTree = () => {
         if (!React.isValidElement(element)) return element;
 
         //destructure element properties
-        const { props, type } = element;
+        const { props } = element;
 
-        /** Type of the most outer element of a functional component */
-        let fcChildrenType;
-
-        if (typeof type === "function") {
-          if (
-            !((type as Function).name === "Route") &&
-            !((type as Function).name === "Switch") &&
-            !((type as Function).name === "Redirect") &&
-            !((type as Function).name === "Redirect")
-          ) {
-            fcChildrenType = (type as Function)().type;
-          }
-        }
-
-        if (fcChildrenType) {
-          currentIndexMap.set(
-            fcChildrenType,
-            currentIndexMap.has(fcChildrenType)
-              ? currentIndexMap.get(fcChildrenType) + 1
-              : 1
-          );
-        } else if (typeof type === "string") {
-          currentIndexMap.set(
-            type,
-            currentIndexMap.has(type) ? currentIndexMap.get(type) + 1 : 1
-          );
-        }
-
-        /** Xpath id for this component */
-        let xpathComponentId = fcChildrenType
-          ? xpathId +
-            "/" +
-            fcChildrenType +
-            (componentIndexMap.has(fcChildrenType) &&
-            componentIndexMap.get(fcChildrenType) > 1
-              ? "[" + currentIndexMap.get(fcChildrenType) + "]"
-              : "")
-          : xpathId +
-            "/" +
-            type +
-            (componentIndexMap.has(type) && componentIndexMap.get(type) > 1
-              ? "[" + currentIndexMap.get(type) + "]"
-              : "");
+        const xpathComponentId = getXpathId(
+          element,
+          xpathId,
+          componentIndexMap,
+          currentIndexMap
+        );
 
         //skip links, as they do not work with the IdWrapper, and add to id that there is a link on the children
         if (
@@ -94,12 +58,7 @@ export const useSubTree = () => {
           return React.cloneElement(
             element,
             { ...props },
-            getSubTree(
-              props.children,
-              dispatch,
-              parentId + "-link_to_" + props.to,
-              xpathId + "/a"
-            )
+            getSubTree(props.children, dispatch, xpathId + "/a")
           );
         }
 
@@ -108,7 +67,6 @@ export const useSubTree = () => {
           IdWrapper as any,
           {
             ...props,
-            parentId: parentId,
             xpathId: xpathId,
             loopIndex: i,
             xpathComponentId,
@@ -118,79 +76,87 @@ export const useSubTree = () => {
 
         return wrappedElement;
       });
-
-      //computes occurrence counters of specific html elements inside the children
-      function getXpathIndexMap(
-        childrenArray: React.ReactNode | React.ReactNode[]
-      ) {
-        let map = new Map();
-        React.Children.forEach(childrenArray, (element: React.ReactNode) => {
-          if (!React.isValidElement(element)) return;
-
-          const { type } = element;
-
-          let fcChildrenType;
-
-          if (typeof type === "function") {
-            if (
-              !((type as Function).name === "Route") &&
-              !((type as Function).name === "Switch") &&
-              !((type as Function).name === "Redirect") &&
-              !((type as Function).name === "Redirect")
-            ) {
-              fcChildrenType = (type as Function)().type;
-            }
-          }
-
-          if (fcChildrenType) {
-            map.set(
-              fcChildrenType,
-              map.has(fcChildrenType) ? map.get(fcChildrenType) + 1 : 1
-            );
-          } else if (typeof type === "string") {
-            map.set(type, map.has(type) ? map.get(type) + 1 : 1);
-          }
-        });
-
-        return map;
-      }
     },
-    []
+    [getXpathId]
   );
 
   /** computes current gui state */
-  const getCurrentGuiState = useCallback((element: ReactNode[] | ReactNode) => {
-    if (!React.isValidElement(element)) return;
-
-    const { props } = element;
-
-    const computedChildrenArray: Widget[] = [];
-
-    //recursively compute widget tree
-    React.Children.forEach(props.children, (child: React.ReactNode) => {
-      const childWidget = getCurrentGuiState(child);
-      if (childWidget) computedChildrenArray.push(childWidget);
-    });
-    /** converts an element into type widget and saves relevant information inside the widget object */
-    const convertElementToWidget = (
-      element: ReactNode[] | ReactNode,
-      currentRoute: string
+  const getCurrentGuiState = useCallback(
+    (
+      children: ReactNode[] | ReactNode,
+      xpathId: string,
+      state: ReducerState
     ) => {
-      if (!React.isValidElement(element)) return;
-      const widget: Widget = {
-        route: currentRoute,
-        children: null,
-        height: 0,
-        width: 0,
-        style: {},
-        xpos: 0,
-        ypos: 0,
-      };
-      return widget;
-    };
+      /** occurrence of specific html elements inside children array (e.g. how many div elements are in the children array, how many input element, etc.) to know if brackets are needed, if it is 1 or less, the brackets are omitted in xPath. */
+      let componentIndexMap = getXpathIndexMap(children);
+      //keep track of count of already found html element types to write correct index in id
+      let currentIndexMap = new Map();
 
-    return convertElementToWidget(element, "/");
-  }, []);
+      return React.Children.map(children, (element: React.ReactNode, i) => {
+        if (!React.isValidElement(element)) return;
+
+        const { props, type } = element;
+
+        let xpathComponentId = "";
+
+        //getXpathId
+        xpathComponentId = getXpathId(
+          element,
+          xpathId,
+          componentIndexMap,
+          currentIndexMap
+        );
+
+        let element_children = [];
+
+        //check for routes
+        if ((type as Function).name === "Route") {
+          if (element.props.component) {
+            element_children = props.component().props.children;
+          } else if (element.props.render) {
+            element_children = props.render().props.children;
+          } else {
+            element_children = props.children;
+          }
+        } else {
+          element_children = props.children;
+        }
+
+        /** recursively computed widget tree */
+        const computedChildrenArray = getCurrentGuiState(
+          element_children,
+          xpathComponentId,
+          state
+        );
+
+        //TODO: Some refs are missing e.g div/div[5]/button etc. Maybe the recursion is buggy?
+        console.log(xpathComponentId);
+        const ref = state.refs.get(xpathComponentId);
+        if (ref) console.log(ref.current);
+
+        /** converts an element into type widget and saves relevant information inside the widget object */
+        const convertElementToWidget = (
+          element: ReactNode[] | ReactNode,
+          currentRoute: string
+        ) => {
+          if (!React.isValidElement(element)) return;
+          const widget: Widget = {
+            route: currentRoute,
+            children: computedChildrenArray,
+            height: 0,
+            width: 0,
+            style: {},
+            xpos: 0,
+            ypos: 0,
+          };
+          return widget;
+        };
+
+        return convertElementToWidget(element, "/");
+      });
+    },
+    [getXpathId]
+  );
 
   return useMemo(() => {
     return { getSubTree, getCurrentGuiState };

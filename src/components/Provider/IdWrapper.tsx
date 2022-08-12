@@ -8,18 +8,16 @@ import { useSubTree } from "../../hooks/useSubTree";
 //This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
 export const IdWrapper = ({
   children,
-  parentId,
   xpathId,
   loopIndex,
   xpathComponentId,
 }: {
   children: React.ReactElement;
-  parentId: string;
   xpathId: string;
   loopIndex: number;
   xpathComponentId: string;
 }) => {
-  /* This id could be used instead of the parent + child info. useId creates an Id with the react-tree as well and could be used as a native, react specific implementation of id, but due to
+  /* This id could be used instead of the xpath ids. useId creates an Id with the react-tree as well and could be used as a native, react specific implementation of id, but due to
    changes in the react API in the future, this could break quite easily as it is not necessarily provided to be used as an ID in the way this library employs it.
    useId only works with version React 18 and higher!
 
@@ -28,7 +26,7 @@ export const IdWrapper = ({
 
   //Hook for getting and setting persistent state
   const { dispatch } = useContext(DataContext);
-  //Hook for getting the function for traversing the tree
+  //Hook for getting the functions for traversing the tree
   const { getSubTree } = useSubTree();
 
   //create ref for element
@@ -36,14 +34,9 @@ export const IdWrapper = ({
 
   const { type } = children;
 
-  //add child info to id
-  let componentId = parentId + "-" + type + "_" + loopIndex;
-
   let childElement: React.ReactNode;
-  //add span to all functional components and class components, except routes, such that click events are possible
+
   if (typeof type === "function") {
-    //mark it as the actual functional component with the "fc" in the id
-    componentId = parentId + "-fc_" + (type as Function).name + "_" + loopIndex;
     //check that it is not a React Router specific component
     if (
       !((type as Function).name === "Route") &&
@@ -51,13 +44,13 @@ export const IdWrapper = ({
       !((type as Function).name === "Redirect") &&
       !((type as Function).name === "Redirect")
     ) {
-      childElement = clone((type as Function)(), componentId, xpathComponentId);
+      childElement = clone((type as Function)(), xpathComponentId);
     } else {
       xpathComponentId = xpathId;
-      childElement = clone(children, componentId, xpathComponentId);
+      childElement = clone(children, xpathComponentId);
     }
   } else {
-    childElement = clone(children, componentId, xpathComponentId);
+    childElement = clone(children, xpathComponentId);
   }
 
   useEffect(() => {
@@ -69,11 +62,7 @@ export const IdWrapper = ({
 
   return childElement;
 
-  function clone(
-    element: React.ReactElement,
-    componentId: string,
-    xpathComponentId: string
-  ) {
+  function clone(element: React.ReactElement, xpathComponentId: string) {
     //Overwrite submit function, but keep old functionality
     function handleSubmit(e: any) {
       e.stopPropagation();
@@ -105,7 +94,6 @@ export const IdWrapper = ({
         ? {
             ...props,
             onSubmit: handleSubmit,
-            uuid: componentId,
             xpathId: xpathComponentId,
           }
         : {
@@ -119,7 +107,7 @@ export const IdWrapper = ({
                 "the ",
                 element.type,
                 " with id ",
-                componentId,
+                xpathComponentId,
                 " was clicked on ",
                 new Date(),
                 ". Here is the element: ",
@@ -130,25 +118,24 @@ export const IdWrapper = ({
                 newUserAction: {
                   actionType: PossibleAction.CLICK,
                   timestamp: e.nativeEvent.timeStamp,
-                  elementId: componentId,
+                  elementId: xpathId,
                 },
               });
 
               dispatch({
                 type: ReducerActionEnum.UPDATE_IDS,
                 newIdObject: {
-                  id: componentId,
+                  id: xpathId,
                   element: element,
                 },
               });
             },
-            uuid: componentId,
             xpathid: xpathComponentId,
             ref: ref,
           },
 
       //add children and recursively call subTree function
-      getSubTree(element_children, dispatch, componentId, xpathComponentId)
+      getSubTree(element_children, dispatch, xpathComponentId)
     );
   }
 };
