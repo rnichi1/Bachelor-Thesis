@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useContext } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { ReducerActionEnum } from "../../reducer/reducer";
 import { PossibleAction } from "../../types/actions";
 import { DataContext } from "./Provider";
@@ -13,15 +13,16 @@ export const IdWrapper = ({
   loopIndex,
   xpathComponentId,
 }: {
-  children: React.ReactNode | React.ReactNode[];
+  children: React.ReactElement;
   parentId: string;
   xpathId: string;
   loopIndex: number;
   xpathComponentId: string;
 }) => {
   /* This id could be used instead of the parent + child info. useId creates an Id with the react-tree as well and could be used as a native, react specific implementation of id, but due to
-  /* changes in the react API in the future, this could break quite easily as it is not necessarily provided to be used as an ID in the way this library employs it.
-  /* useId only works with version React 18 and higher!
+   changes in the react API in the future, this could break quite easily as it is not necessarily provided to be used as an ID in the way this library employs it.
+   useId only works with version React 18 and higher!
+
    const id = useId();
   */
 
@@ -30,42 +31,43 @@ export const IdWrapper = ({
   //Hook for getting the function for traversing the tree
   const { getSubTree } = useSubTree();
 
-  return React.Children.map(children, (element: React.ReactNode) => {
-    if (!React.isValidElement(element)) return element;
+  //create ref for element
+  const ref = useRef();
 
-    const { type } = element;
+  const { type } = children;
 
-    //add child info to id
-    let componentId = parentId + "-" + type + "_" + loopIndex;
+  //add child info to id
+  let componentId = parentId + "-" + type + "_" + loopIndex;
 
-    let childElement: React.ReactNode;
-    //add span to all functional components and class components, except routes, such that click events are possible
-    if (typeof type === "function") {
-      //mark it as the actual functional component with the "fc" in the id
-      componentId =
-        parentId + "-fc_" + (type as Function).name + "_" + loopIndex;
-      //check that it is not a React Router specific component
-      if (
-        !((type as Function).name === "Route") &&
-        !((type as Function).name === "Switch") &&
-        !((type as Function).name === "Redirect") &&
-        !((type as Function).name === "Redirect")
-      ) {
-        childElement = clone(
-          (type as Function)(),
-          componentId,
-          xpathComponentId
-        );
-      } else {
-        xpathComponentId = xpathId;
-        childElement = clone(element, componentId, xpathComponentId);
-      }
+  let childElement: React.ReactNode;
+  //add span to all functional components and class components, except routes, such that click events are possible
+  if (typeof type === "function") {
+    //mark it as the actual functional component with the "fc" in the id
+    componentId = parentId + "-fc_" + (type as Function).name + "_" + loopIndex;
+    //check that it is not a React Router specific component
+    if (
+      !((type as Function).name === "Route") &&
+      !((type as Function).name === "Switch") &&
+      !((type as Function).name === "Redirect") &&
+      !((type as Function).name === "Redirect")
+    ) {
+      childElement = clone((type as Function)(), componentId, xpathComponentId);
     } else {
-      childElement = clone(element, componentId, xpathComponentId);
+      xpathComponentId = xpathId;
+      childElement = clone(children, componentId, xpathComponentId);
     }
+  } else {
+    childElement = clone(children, componentId, xpathComponentId);
+  }
 
-    return childElement;
-  });
+  useEffect(() => {
+    dispatch({
+      type: ReducerActionEnum.UPDATE_REFS,
+      newRefObject: { ref: ref, id: xpathComponentId },
+    });
+  }, [dispatch, xpathComponentId]);
+
+  return childElement;
 
   function clone(
     element: React.ReactElement,
@@ -142,6 +144,7 @@ export const IdWrapper = ({
             },
             uuid: componentId,
             xpathid: xpathComponentId,
+            ref: ref,
           },
 
       //add children and recursively call subTree function

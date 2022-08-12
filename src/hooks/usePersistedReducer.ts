@@ -16,7 +16,7 @@ export function usePersistedReducer(
     if (stringState) {
       try {
         const { actions, ids } = JSON.parse(stringState);
-        return { actions: actions, ids: new Map(ids) };
+        return { actions: actions, ids: new Map(ids), refs: new Map() };
       } catch (error) {
         return initialState;
       }
@@ -28,7 +28,7 @@ export function usePersistedReducer(
   useEffect(() => {
     const stateEqual = deepEqual(prevState, state);
 
-    //adjust state, such that more complicated datatypes like Map can be saved and reconstructed from localStorage
+    /** adjust state, such that more complicated data types like Map can be saved and reconstructed from localStorage */
     const adjustedState = {
       actions: state.actions,
       ids: Array.from(state.ids),

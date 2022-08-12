@@ -1,12 +1,20 @@
 import * as React from "react";
-import { createElement, useCallback, useMemo } from "react";
+import { createElement, ReactNode, useCallback, useMemo } from "react";
 import { ReducerActionEnum } from "../reducer/reducer";
 import { Action } from "../types/actions";
 import { IdWrapper } from "../components/Provider/IdWrapper";
+import { Widget } from "../types/guiState";
 
-//Custom React Hook with getSubTree function, which is use to add higher order component to each valid component and element in the react ui tree.
+/** Custom React Hook with getSubTree function, which is used to add a higher order component to each valid component and element in the react ui tree.
+ */
 export const useSubTree = () => {
-  //returns a children subtree of any component as a React Node with custom props to collect user action data
+  /**
+   * returns a children subtree of any component as a React Node with custom props to collect user action data.
+   @param children the react component subtree
+   @param dispatch function used for saving data to reducer
+   @param parentId Id of parent component
+   @param xpathId xpathId
+  */
   const getSubTree = useCallback(
     (
       children: React.ReactNode | React.ReactNode[],
@@ -20,7 +28,7 @@ export const useSubTree = () => {
     ): React.ReactNode | React.ReactNode[] => {
       //define clone function
 
-      // get occurrence of specific html elements inside children array (e.g. how many div elements are in the children array, how many input element, etc.) to know if brackets are needed, if it is 1 or less, the brackets are omitted in xPath.
+      /** occurrence of specific html elements inside children array (e.g. how many div elements are in the children array, how many input element, etc.) to know if brackets are needed, if it is 1 or less, the brackets are omitted in xPath. */
       let componentIndexMap = getXpathIndexMap(children);
       //keep track of count of already found html element types to write correct index in id
       let currentIndexMap = new Map();
@@ -32,6 +40,7 @@ export const useSubTree = () => {
         //destructure element properties
         const { props, type } = element;
 
+        /** Type of the most outer element of a functional component */
         let fcChildrenType;
 
         if (typeof type === "function") {
@@ -59,6 +68,7 @@ export const useSubTree = () => {
           );
         }
 
+        /** Xpath id for this component */
         let xpathComponentId = fcChildrenType
           ? xpathId +
             "/" +
@@ -88,7 +98,7 @@ export const useSubTree = () => {
               props.children,
               dispatch,
               parentId + "-link_to_" + props.to,
-              xpathId + "/" + "a"
+              xpathId + "/a"
             )
           );
         }
@@ -148,24 +158,41 @@ export const useSubTree = () => {
     []
   );
 
-  function findFcElementType(element: React.ReactNode) {
+  /** computes current gui state */
+  const getCurrentGuiState = useCallback((element: ReactNode[] | ReactNode) => {
     if (!React.isValidElement(element)) return;
 
-    const { props, type } = element;
+    const { props } = element;
 
-    if (
-      !((type as Function).name === "Route") &&
-      !((type as Function).name === "Switch") &&
-      !((type as Function).name === "Redirect") &&
-      !((type as Function).name === "Redirect")
-    ) {
-      return;
-    }
+    const computedChildrenArray: Widget[] = [];
 
-    return;
-  }
+    //recursively compute widget tree
+    React.Children.forEach(props.children, (child: React.ReactNode) => {
+      const childWidget = getCurrentGuiState(child);
+      if (childWidget) computedChildrenArray.push(childWidget);
+    });
+    /** converts an element into type widget and saves relevant information inside the widget object */
+    const convertElementToWidget = (
+      element: ReactNode[] | ReactNode,
+      currentRoute: string
+    ) => {
+      if (!React.isValidElement(element)) return;
+      const widget: Widget = {
+        route: currentRoute,
+        children: null,
+        height: 0,
+        width: 0,
+        style: {},
+        xpos: 0,
+        ypos: 0,
+      };
+      return widget;
+    };
+
+    return convertElementToWidget(element, "/");
+  }, []);
 
   return useMemo(() => {
-    return { getSubTree };
-  }, [getSubTree]);
+    return { getSubTree, getCurrentGuiState };
+  }, [getSubTree, getCurrentGuiState]);
 };

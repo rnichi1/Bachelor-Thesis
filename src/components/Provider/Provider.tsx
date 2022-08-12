@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useContext } from "react";
+import React, { createContext, MutableRefObject, useContext } from "react";
 import { useSubTree } from "../../hooks/useSubTree";
 import { Action } from "../../types/actions";
 import {
@@ -9,15 +9,19 @@ import {
 import { usePersistedReducer } from "../../hooks/usePersistedReducer";
 import { ReducerState } from "../../types/reducerTypes";
 
-//Context to save GUI state data in global state
+/**Context to save GUI state data in global state*/
 export const DataContext = createContext<{
   state: ReducerState;
   dispatch: React.Dispatch<{
     type: ReducerActionEnum;
     newUserAction?: Action | undefined;
     newIdObject?: { id: string; element: React.ReactNode } | undefined;
+    newRefObject?: { id: string; ref: MutableRefObject<undefined> };
   }>;
-}>({ state: { actions: [], ids: new Map() }, dispatch: () => {} });
+}>({
+  state: { actions: [], ids: new Map(), refs: new Map() },
+  dispatch: () => {},
+});
 
 const Provider = ({
   children,
@@ -56,7 +60,7 @@ export const CustomButton = () => {
   );
 };
 
-//Button to test functionality in console (log saved state information)
+/**Button to test functionality in console (log saved state information)*/
 export const PrintDataButton = () => {
   const { state } = useContext(DataContext);
 
@@ -72,6 +76,7 @@ export const PrintDataButton = () => {
       onClick={() => {
         console.log("current action data", state.actions);
         console.log("current component ids", state.ids);
+        console.log("current refs", state.refs);
       }}
     >
       Print Data to Console
