@@ -77,7 +77,7 @@ export const useSubTree = () => {
         return wrappedElement;
       });
     },
-    [getXpathId]
+    [getXpathId, getXpathIndexMap]
   );
 
   /** computes current gui state */
@@ -129,7 +129,7 @@ export const useSubTree = () => {
           state
         );
 
-        //TODO: Some refs are missing e.g div/div[5]/button etc. Maybe the recursion is buggy?
+        //TODO: Some refs are missing e.g div/div[5]/button etc. Maybe the recursion is buggy? Somehow the example path gets printed as div/button without the div[5]
         console.log(xpathComponentId);
         const ref = state.refs.get(xpathComponentId);
         if (ref) console.log(ref.current);
@@ -155,7 +155,7 @@ export const useSubTree = () => {
         return convertElementToWidget(element, "/");
       });
     },
-    [getXpathId]
+    [getXpathId, getXpathIndexMap]
   );
 
   return useMemo(() => {
