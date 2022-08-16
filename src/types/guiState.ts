@@ -2,6 +2,7 @@ import { CSSProperties } from "react";
 
 export type GuiState = {
   widgetArray: Widget[];
+  currentRoute: string;
 };
 
 export type Widget = {

@@ -26,7 +26,6 @@ export const useXpath = () => {
             !((type as Function).name === "Redirect") &&
             !((type as Function).name === "Redirect")
           ) {
-            console.log(typeMap);
             if (typeMap) fcChildrenType = typeMap.get((type as Function).name);
           }
         }

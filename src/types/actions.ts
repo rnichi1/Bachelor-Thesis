@@ -7,7 +7,7 @@ export type Action = {
 
 //enum for possible user actions
 export enum PossibleAction {
-  CLICK,
-  SUBMIT,
-  TYPE,
+  CLICK = "CLICK",
+  SUBMIT = "SUBMIT",
+  ROUTE = "ROUTE",
 }

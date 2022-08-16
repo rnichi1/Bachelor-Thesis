@@ -5,6 +5,7 @@ import { IdWrapper } from "../components/Provider/IdWrapper";
 import { Widget } from "../types/guiState";
 import { ActionType, ReducerState } from "../types/reducerTypes";
 import { useXpath } from "./useXpath";
+import { useLocation } from "react-router-dom";
 
 /** Custom React Hook with getSubTree function, which is used to add a higher order component to each valid component and element in the react ui tree.
  */
@@ -23,7 +24,8 @@ export const useSubTree = () => {
       children: React.ReactNode | React.ReactNode[],
       dispatch: React.Dispatch<ActionType>,
       xpathId: string,
-      typeMap: Map<string | undefined, string>
+      typeMap: Map<string | undefined, string>,
+      hasLink?: boolean
     ): React.ReactNode | React.ReactNode[] => {
       /** occurrence of specific html elements inside children array (e.g. how many div elements are in the children array, how many input element, etc.) to know if brackets are needed, if it is 1 or less, the brackets are omitted in xPath. */
       let componentIndexMap = getXpathIndexMap(children, typeMap);
@@ -55,11 +57,11 @@ export const useSubTree = () => {
           return React.cloneElement(
             element,
             { ...props },
-            getSubTree(props.children, dispatch, xpathId + "/a", typeMap)
+            getSubTree(props.children, dispatch, xpathId + "/a", typeMap, true)
           );
         }
 
-        //wrap element in higher order component to add needed properties to it and call getSubTree function recursively
+        /** wrapped element in higher order component to add needed properties to it and call getSubTree function recursively */
         const wrappedElement = createElement(
           IdWrapper as any,
           {
@@ -68,6 +70,7 @@ export const useSubTree = () => {
             loopIndex: i,
             xpathComponentId,
             typeMap,
+            hasLink,
           },
           element
         );
@@ -114,6 +117,7 @@ export const useSubTree = () => {
 
         //check for routes
         if ((type as Function).name === "Route") {
+          if (props.path !== route) return;
           currentRoute = props.path;
           if (element.props.component) {
             element_children = props.component().props.children;
@@ -177,13 +181,13 @@ export const useSubTree = () => {
         // convert an dom element into type widget and saves relevant information inside the widget object */
         const widget: Widget = {
           id: xpathComponentId,
-          route: currentRoute ? currentRoute : route,
-          children: computedChildrenArray,
-          boundingHeight: boundingRect?.height,
-          boundingWidth: boundingRect?.width,
+          route: currentRoute ? currentRoute : route ? route : "route not set",
+          children: computedChildrenArray ? computedChildrenArray : [],
+          boundingHeight: boundingRect ? boundingRect.height : -1,
+          boundingWidth: boundingRect ? boundingRect.width : -1,
           style: styleAsObject,
-          xpos: boundingRect?.x,
-          ypos: boundingRect?.y,
+          xpos: boundingRect ? boundingRect.x : -1,
+          ypos: boundingRect ? boundingRect.y : -1,
         };
 
         return widget;

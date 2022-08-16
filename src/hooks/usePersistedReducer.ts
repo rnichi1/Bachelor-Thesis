@@ -13,14 +13,15 @@ export function usePersistedReducer(
 
   function init(): ReducerState {
     const stringState = localStorage.getItem(storageKey);
+
     if (stringState) {
       try {
-        const { actions, ids } = JSON.parse(stringState);
+        const { actions, ids, guiStates } = JSON.parse(stringState);
         return {
           actions: actions,
           ids: new Map(ids),
           refs: new Map(),
-          guiStates: [],
+          guiStates: guiStates,
         };
       } catch (error) {
         return initialState;
@@ -37,7 +38,10 @@ export function usePersistedReducer(
     const adjustedState = {
       actions: state.actions,
       ids: Array.from(state.ids),
+      guiStates: state.guiStates ? state.guiStates : [],
     };
+    console.log(stateEqual);
+    console.log(adjustedState);
     if (!stateEqual) {
       try {
         //Array to remove cyclic references, which stringify doesn't work with.

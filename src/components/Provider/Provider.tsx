@@ -1,5 +1,6 @@
 import React, {
   createContext,
+  ReactNode,
   useCallback,
   useContext,
   useEffect,
@@ -17,6 +18,7 @@ import { Widget } from "../../types/guiState";
 import { flatMap, map } from "lodash";
 import { type } from "os";
 import { getTypeMap } from "../../helpers/typeMap";
+import { useLocation } from "react-router-dom";
 
 export const XPATH_ID_BASE = "/html/body/div";
 
@@ -24,13 +26,18 @@ export const XPATH_ID_BASE = "/html/body/div";
 export const DataContext = createContext<{
   state: ReducerState;
   dispatch: React.Dispatch<ActionType>;
-  saveCurrentGuiState: (currentGuiState: Widget[] | null | undefined) => void;
+  saveCurrentGuiState: (
+    currentGuiState: Widget[] | null | undefined,
+    currentRoute: string
+  ) => void;
   firstParent: React.ReactNode | React.ReactNode[];
+  typeMap: Map<string | undefined, string>;
 }>({
   state: { actions: [], ids: new Map(), refs: new Map(), guiStates: [] },
   dispatch: () => {},
   saveCurrentGuiState: () => {},
   firstParent: undefined,
+  typeMap: new Map(),
 });
 
 const Provider = ({
@@ -38,8 +45,7 @@ const Provider = ({
 }: {
   children?: React.ReactNode | React.ReactNode[];
 }) => {
-  const { getSubTree, getFunctionalComponentTypes, getCurrentGuiState } =
-    useSubTree();
+  const { getSubTree, getFunctionalComponentTypes } = useSubTree();
 
   const reducerKey = "PROVIDER_STATE";
   const { state, dispatch } = usePersistedReducer(
@@ -50,12 +56,14 @@ const Provider = ({
 
   /** saves current state in global storage */
   const saveCurrentGuiState = useCallback(
-    (currentGuiState: Widget[] | null | undefined) => {
+    (currentGuiState: Widget[] | null | undefined, currentRoute: string) => {
       if (currentGuiState) {
-        console.log(currentGuiState);
         dispatch({
           type: ReducerActionEnum.UPDATE_GUI_STATES,
-          newGuiState: { widgetArray: currentGuiState },
+          newGuiState: {
+            widgetArray: currentGuiState,
+            currentRoute: currentRoute,
+          },
         });
       }
     },
@@ -66,23 +74,19 @@ const Provider = ({
   const x = getFunctionalComponentTypes(children);
   const typeMap: Map<string | undefined, string> = getTypeMap(x);
 
-  //TODO: Figure out why boundingHeight is not set here!!
-  useEffect(() => {
-    const initialGuiState = getCurrentGuiState(
-      children,
-      XPATH_ID_BASE,
-      state,
-      typeMap
-    );
-    saveCurrentGuiState(initialGuiState);
-  }, []);
-
   return (
     <>
       <DataContext.Provider
-        value={{ state, dispatch, saveCurrentGuiState, firstParent: children }}
+        value={{
+          state,
+          dispatch,
+          saveCurrentGuiState,
+          firstParent: children,
+          typeMap: typeMap,
+        }}
       >
         <PrintDataButton />
+        <StartWalkthroughButton />
         {children
           ? getSubTree(children, dispatch, XPATH_ID_BASE, typeMap)
           : null}
@@ -99,6 +103,7 @@ export const CustomButton = () => {
     <button
       style={{ height: "200px", color: color, width: width }}
       onClick={() => {
+        if (color === "blue") setWidth("350px");
         setColor("blue");
         console.log("color should change");
       }}
@@ -120,7 +125,7 @@ export const PrintDataButton = () => {
         right: 10,
         top: 50,
         width: "100px",
-        height: "100px",
+        height: "50px",
       }}
       onClick={() => {
         console.log("current action data", state.actions);
@@ -130,6 +135,42 @@ export const PrintDataButton = () => {
       }}
     >
       Print Data to Console
+    </button>
+  );
+};
+
+/** Button that records first gui state and starts walkthrough for the user */
+export const StartWalkthroughButton = () => {
+  const { state, firstParent, saveCurrentGuiState, typeMap } =
+    useContext(DataContext);
+  const { getCurrentGuiState } = useSubTree();
+
+  const location = useLocation();
+
+  const startWalkthrough = useCallback(() => {
+    const initialGuiState = getCurrentGuiState(
+      firstParent,
+      XPATH_ID_BASE,
+      state,
+      typeMap,
+      location.pathname
+    );
+
+    saveCurrentGuiState(initialGuiState, location.pathname);
+  }, []);
+
+  return (
+    <button
+      style={{
+        position: "absolute",
+        right: 10,
+        top: 110,
+        width: "100px",
+        height: "40px",
+      }}
+      onClick={startWalkthrough}
+    >
+      Start Walkthrough
     </button>
   );
 };

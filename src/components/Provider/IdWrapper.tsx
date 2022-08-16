@@ -4,20 +4,28 @@ import { ReducerActionEnum } from "../../reducer/reducer";
 import { PossibleAction } from "../../types/actions";
 import { DataContext, XPATH_ID_BASE } from "./Provider";
 import { useSubTree } from "../../hooks/useSubTree";
+import { useLocation } from "react-router-dom";
 
-//This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
+/** This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
+ * @param children wrapped component.
+ * @param xpathId id of wrapped component's parent component.
+ * @param xpathComponentId id of wrapped component.
+ * @param hasLink boolean to determine if there is a Link wrapping the element, in order to know when to stop propagation of user events. This needs to be true, when there is a link present, in order for routing to work. It might work without this as well,
+ * but for safety measures it is included. It is also used for identifying a route action.
+ * @param typeMap a map of types of each functional component inside the application, used for the xpath id.
+ * */
 export const IdWrapper = ({
   children,
   xpathId,
-  loopIndex,
   xpathComponentId,
   typeMap,
+  hasLink,
 }: {
   children: React.ReactElement;
   xpathId: string;
-  loopIndex: number;
   xpathComponentId: string;
   typeMap: Map<string | undefined, string>;
+  hasLink?: boolean;
 }) => {
   /* This id could be used instead of the xpath ids. useId creates an Id with the react-tree as well and could be used as a native, react specific implementation of id, but due to
    changes in the react API in the future, this could break quite easily as it is not necessarily provided to be used as an ID in the way this library employs it.
@@ -31,6 +39,9 @@ export const IdWrapper = ({
     useContext(DataContext);
   //Hook for getting the functions for traversing the tree
   const { getSubTree, getCurrentGuiState } = useSubTree();
+
+  //get current route
+  const location = useLocation();
 
   //create ref for element
   const ref: React.MutableRefObject<HTMLElement> = useRef<any>();
@@ -114,13 +125,18 @@ export const IdWrapper = ({
             render: null,
             onClick: async (e: any) => {
               e.persist();
+              if (hasLink) {
+                e.stopPropagation();
+              }
+
               props.onClick && (await props.onClick());
 
               const currentGuiState = await getCurrentGuiState(
                 firstParent,
                 XPATH_ID_BASE,
                 state,
-                typeMap
+                typeMap,
+                location.pathname
               );
 
               console.log(
@@ -137,7 +153,9 @@ export const IdWrapper = ({
               dispatch({
                 type: ReducerActionEnum.UPDATE_ACTIONS,
                 newUserAction: {
-                  actionType: PossibleAction.CLICK,
+                  actionType: hasLink
+                    ? PossibleAction.ROUTE
+                    : PossibleAction.CLICK,
                   timestamp: e.nativeEvent.timeStamp,
                   elementId: xpathId,
                 },
@@ -152,14 +170,14 @@ export const IdWrapper = ({
               });
 
               //save the current gui state in the global storage
-              saveCurrentGuiState(currentGuiState);
+              saveCurrentGuiState(currentGuiState, location.pathname);
             },
             xpathid: xpathComponentId,
             ref: ref,
           },
 
       //add children and recursively call subTree function
-      getSubTree(element_children, dispatch, xpathComponentId, typeMap)
+      getSubTree(element_children, dispatch, xpathComponentId, typeMap, hasLink)
     );
   }
 };

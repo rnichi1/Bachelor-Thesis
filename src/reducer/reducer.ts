@@ -83,7 +83,7 @@ export const reducer: (
       };
 
     case ReducerActionEnum.UPDATE_GUI_STATES:
-      const guiStatesCopy = [...state.guiStates];
+      const guiStatesCopy = state.guiStates ? [...state.guiStates] : [];
 
       if (action.newGuiState) {
         let isNewState = true;
