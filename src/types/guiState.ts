@@ -7,8 +7,8 @@ export type GuiState = {
 export type Widget = {
   id: string;
   route?: string;
-  boundingWidth?: number;
-  boundingHeight?: number;
+  width?: number;
+  height?: number;
   xpos?: number;
   ypos?: number;
   style?: CSSStyleDeclaration | undefined;

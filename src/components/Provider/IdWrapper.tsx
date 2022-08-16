@@ -1,9 +1,10 @@
 import * as React from "react";
-import { useCallback, useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { ReducerActionEnum } from "../../reducer/reducer";
 import { PossibleAction } from "../../types/actions";
 import { DataContext, XPATH_ID_BASE } from "./Provider";
 import { useSubTree } from "../../hooks/useSubTree";
+import { getCurrentGuiState } from "../../helpers/xPathHelpers";
 
 //This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
 export const IdWrapper = ({
@@ -11,13 +12,11 @@ export const IdWrapper = ({
   xpathId,
   loopIndex,
   xpathComponentId,
-  typeMap,
 }: {
   children: React.ReactElement;
   xpathId: string;
   loopIndex: number;
   xpathComponentId: string;
-  typeMap: Map<string | undefined, string>;
 }) => {
   /* This id could be used instead of the xpath ids. useId creates an Id with the react-tree as well and could be used as a native, react specific implementation of id, but due to
    changes in the react API in the future, this could break quite easily as it is not necessarily provided to be used as an ID in the way this library employs it.
@@ -30,7 +29,7 @@ export const IdWrapper = ({
   const { dispatch, saveCurrentGuiState, firstParent, state } =
     useContext(DataContext);
   //Hook for getting the functions for traversing the tree
-  const { getSubTree, getCurrentGuiState } = useSubTree();
+  const { getSubTree } = useSubTree();
 
   //create ref for element
   const ref: React.MutableRefObject<HTMLElement> = useRef<any>();
@@ -44,6 +43,7 @@ export const IdWrapper = ({
     if (
       !((type as Function).name === "Route") &&
       !((type as Function).name === "Switch") &&
+      !((type as Function).name === "Redirect") &&
       !((type as Function).name === "Redirect")
     ) {
       childElement = clone((type as Function)(), xpathComponentId);
@@ -112,16 +112,12 @@ export const IdWrapper = ({
             ...props,
             component: null,
             render: null,
-            onClick: async (e: any) => {
+            onClick: (e: any) => {
+              props.onClick && props.onClick();
+              /*
+              e.stopPropagation();
               e.persist();
-              props.onClick && (await props.onClick());
-
-              const currentGuiState = await getCurrentGuiState(
-                firstParent,
-                XPATH_ID_BASE,
-                state,
-                typeMap
-              );
+              */
 
               console.log(
                 "the ",
@@ -133,7 +129,6 @@ export const IdWrapper = ({
                 ". Here is the element: ",
                 element
               );
-
               dispatch({
                 type: ReducerActionEnum.UPDATE_ACTIONS,
                 newUserAction: {
@@ -152,14 +147,16 @@ export const IdWrapper = ({
               });
 
               //save the current gui state in the global storage
-              saveCurrentGuiState(currentGuiState);
+              saveCurrentGuiState(
+                getCurrentGuiState(firstParent, XPATH_ID_BASE, state)
+              );
             },
             xpathid: xpathComponentId,
             ref: ref,
           },
 
       //add children and recursively call subTree function
-      getSubTree(element_children, dispatch, xpathComponentId, typeMap)
+      getSubTree(element_children, dispatch, xpathComponentId)
     );
   }
 };
