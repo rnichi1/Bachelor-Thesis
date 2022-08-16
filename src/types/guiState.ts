@@ -1,16 +1,15 @@
 import { CSSProperties } from "react";
 
 export type GuiState = {
-  widgetArray: Widget[];
+  widgets: Widget;
 };
 
 export type Widget = {
-  id: string;
-  route?: string;
-  width?: number;
-  height?: number;
-  xpos?: number;
-  ypos?: number;
-  style?: CSSStyleDeclaration | undefined;
+  route: string;
+  width: number;
+  height: number;
+  xpos: number;
+  ypos: number;
+  style: CSSProperties | undefined;
   children?: Widget[] | null;
 };

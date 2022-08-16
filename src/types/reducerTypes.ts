@@ -2,27 +2,19 @@ import * as React from "react";
 import { ReducerActionEnum } from "../reducer/reducer";
 import { Action } from "./actions";
 import { MutableRefObject } from "react";
-import { GuiState } from "./guiState";
 
 export type ReducerType = (
   state: ReducerState,
-  action: ActionType
+  action: {
+    type: ReducerActionEnum;
+    newUserAction?: Action;
+    newIdObject?: { id: string; element: React.ReactNode };
+    newRefObject?: { id: string; ref: MutableRefObject<undefined> };
+  }
 ) => ReducerState;
 
 export type ReducerState = {
-  guiStates: GuiState[];
   actions: Action[];
   ids: Map<string, React.ReactNode>;
-  refs: Map<string, MutableRefObject<HTMLElement>>;
-};
-
-export type ActionType = {
-  type: ReducerActionEnum;
-  newUserAction?: Action;
-  newIdObject?: { id: string; element: React.ReactNode };
-  newRefObject?: {
-    id: string;
-    ref: MutableRefObject<HTMLElement>;
-  };
-  newGuiState?: GuiState;
+  refs: Map<string, MutableRefObject<undefined>>;
 };

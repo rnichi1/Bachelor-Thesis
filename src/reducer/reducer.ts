@@ -2,21 +2,17 @@ import * as React from "react";
 import { Action } from "../types/actions";
 import { ReducerState } from "../types/reducerTypes";
 import { MutableRefObject } from "react";
-import { GuiState } from "../types/guiState";
-import { isEqual } from "lodash";
 
 export const initialState: ReducerState = {
   actions: [],
   ids: new Map(),
   refs: new Map(),
-  guiStates: [],
 };
 
 export enum ReducerActionEnum {
   UPDATE_ACTIONS,
   UPDATE_IDS,
   UPDATE_REFS,
-  UPDATE_GUI_STATES,
 }
 
 export const reducer: (
@@ -30,7 +26,7 @@ export const reducer: (
     };
     newRefObject?: {
       id: string;
-      ref: MutableRefObject<HTMLElement>;
+      ref: MutableRefObject<undefined>;
     };
   }
 ) => ReducerState = (
@@ -44,9 +40,8 @@ export const reducer: (
     };
     newRefObject?: {
       id: string;
-      ref: MutableRefObject<HTMLElement>;
+      ref: MutableRefObject<undefined>;
     };
-    newGuiState?: GuiState;
   }
 ) => {
   switch (action.type) {
@@ -74,31 +69,12 @@ export const reducer: (
       if (!refsCopy.has(action.newRefObject?.id as string))
         refsCopy.set(
           action.newRefObject?.id as string,
-          action.newRefObject?.ref as MutableRefObject<HTMLElement>
+          action.newRefObject?.ref as MutableRefObject<undefined>
         );
 
       return {
         ...state,
         refs: refsCopy,
-      };
-
-    case ReducerActionEnum.UPDATE_GUI_STATES:
-      const guiStatesCopy = [...state.guiStates];
-
-      if (action.newGuiState) {
-        let isNewState = true;
-        for (let i = 0; i < guiStatesCopy.length; i++) {
-          if (isEqual(action.newGuiState, state.guiStates[i])) {
-            isNewState = false;
-          }
-        }
-
-        isNewState && guiStatesCopy.push(action.newGuiState);
-      }
-
-      return {
-        ...state,
-        guiStates: guiStatesCopy,
       };
     default:
       return state;

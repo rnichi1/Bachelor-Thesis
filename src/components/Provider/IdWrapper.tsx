@@ -2,9 +2,8 @@ import * as React from "react";
 import { useContext, useEffect, useRef } from "react";
 import { ReducerActionEnum } from "../../reducer/reducer";
 import { PossibleAction } from "../../types/actions";
-import { DataContext, XPATH_ID_BASE } from "./Provider";
+import { DataContext } from "./Provider";
 import { useSubTree } from "../../hooks/useSubTree";
-import { getCurrentGuiState } from "../../helpers/xPathHelpers";
 
 //This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
 export const IdWrapper = ({
@@ -26,13 +25,12 @@ export const IdWrapper = ({
   */
 
   //Hook for getting and setting persistent state
-  const { dispatch, saveCurrentGuiState, firstParent, state } =
-    useContext(DataContext);
+  const { dispatch } = useContext(DataContext);
   //Hook for getting the functions for traversing the tree
   const { getSubTree } = useSubTree();
 
   //create ref for element
-  const ref: React.MutableRefObject<HTMLElement> = useRef<any>();
+  const ref = useRef();
 
   const { type } = children;
 
@@ -55,23 +53,12 @@ export const IdWrapper = ({
     childElement = clone(children, xpathComponentId);
   }
 
-  // save reference to dom element in global storage
   useEffect(() => {
-    if (typeof type === "function") {
-      if (
-        (type as Function).name === "Route" ||
-        (type as Function).name === "Switch" ||
-        (type as Function).name === "Redirect"
-      ) {
-        return;
-      }
-    }
-
     dispatch({
       type: ReducerActionEnum.UPDATE_REFS,
       newRefObject: { ref: ref, id: xpathComponentId },
     });
-  }, [dispatch, xpathComponentId, type]);
+  }, [dispatch, xpathComponentId]);
 
   return childElement;
 
@@ -100,6 +87,7 @@ export const IdWrapper = ({
       element_children = props.children;
     }
 
+    //TODO: add xpath id to state
     return React.cloneElement(
       element,
       type === "form"
@@ -113,12 +101,8 @@ export const IdWrapper = ({
             component: null,
             render: null,
             onClick: (e: any) => {
-              props.onClick && props.onClick();
-              /*
               e.stopPropagation();
               e.persist();
-              */
-
               console.log(
                 "the ",
                 element.type,
@@ -145,11 +129,6 @@ export const IdWrapper = ({
                   element: element,
                 },
               });
-
-              //save the current gui state in the global storage
-              saveCurrentGuiState(
-                getCurrentGuiState(firstParent, XPATH_ID_BASE, state)
-              );
             },
             xpathid: xpathComponentId,
             ref: ref,

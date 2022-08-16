@@ -16,12 +16,7 @@ export function usePersistedReducer(
     if (stringState) {
       try {
         const { actions, ids } = JSON.parse(stringState);
-        return {
-          actions: actions,
-          ids: new Map(ids),
-          refs: new Map(),
-          guiStates: [],
-        };
+        return { actions: actions, ids: new Map(ids), refs: new Map() };
       } catch (error) {
         return initialState;
       }
