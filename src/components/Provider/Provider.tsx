@@ -1,4 +1,10 @@
-import React, { createContext, useCallback, useContext, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { useSubTree } from "../../hooks/useSubTree";
 import {
   initialState,
@@ -8,6 +14,9 @@ import {
 import { usePersistedReducer } from "../../hooks/usePersistedReducer";
 import { ActionType, ReducerState } from "../../types/reducerTypes";
 import { Widget } from "../../types/guiState";
+import { flatMap, map } from "lodash";
+import { type } from "os";
+import { getTypeMap } from "../../helpers/typeMap";
 
 export const XPATH_ID_BASE = "/html/body/div";
 
@@ -29,7 +38,8 @@ const Provider = ({
 }: {
   children?: React.ReactNode | React.ReactNode[];
 }) => {
-  const { getSubTree } = useSubTree();
+  const { getSubTree, getFunctionalComponentTypes, getCurrentGuiState } =
+    useSubTree();
 
   const reducerKey = "PROVIDER_STATE";
   const { state, dispatch } = usePersistedReducer(
@@ -39,17 +49,33 @@ const Provider = ({
   );
 
   /** saves current state in global storage */
-  const saveCurrentGuiState = (
-    currentGuiState: Widget[] | null | undefined
-  ) => {
-    if (currentGuiState) {
-      dispatch({
-        type: ReducerActionEnum.UPDATE_GUI_STATES,
-        newGuiState: { widgetArray: currentGuiState },
-      });
-      console.log("saved current gui state if it is new");
-    }
-  };
+  const saveCurrentGuiState = useCallback(
+    (currentGuiState: Widget[] | null | undefined) => {
+      if (currentGuiState) {
+        console.log(currentGuiState);
+        dispatch({
+          type: ReducerActionEnum.UPDATE_GUI_STATES,
+          newGuiState: { widgetArray: currentGuiState },
+        });
+      }
+    },
+    [dispatch]
+  );
+
+  //get type map for all functional components inside application
+  const x = getFunctionalComponentTypes(children);
+  const typeMap: Map<string | undefined, string> = getTypeMap(x);
+
+  //TODO: Figure out why boundingHeight is not set here!!
+  useEffect(() => {
+    const initialGuiState = getCurrentGuiState(
+      children,
+      XPATH_ID_BASE,
+      state,
+      typeMap
+    );
+    saveCurrentGuiState(initialGuiState);
+  }, []);
 
   return (
     <>
@@ -57,7 +83,9 @@ const Provider = ({
         value={{ state, dispatch, saveCurrentGuiState, firstParent: children }}
       >
         <PrintDataButton />
-        {children ? getSubTree(children, dispatch, XPATH_ID_BASE) : null}
+        {children
+          ? getSubTree(children, dispatch, XPATH_ID_BASE, typeMap)
+          : null}
       </DataContext.Provider>
     </>
   );
@@ -72,7 +100,6 @@ export const CustomButton = () => {
       style={{ height: "200px", color: color, width: width }}
       onClick={() => {
         setColor("blue");
-        setWidth("350px");
         console.log("color should change");
       }}
     >
