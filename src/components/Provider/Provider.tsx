@@ -1,28 +1,27 @@
-import React, { createContext, MutableRefObject, useContext } from "react";
+import React, { createContext, useCallback, useContext, useState } from "react";
 import { useSubTree } from "../../hooks/useSubTree";
-import { Action } from "../../types/actions";
 import {
   initialState,
   reducer,
   ReducerActionEnum,
 } from "../../reducer/reducer";
 import { usePersistedReducer } from "../../hooks/usePersistedReducer";
-import { ReducerState } from "../../types/reducerTypes";
+import { ActionType, ReducerState } from "../../types/reducerTypes";
+import { Widget } from "../../types/guiState";
 
-const XPATH_ID_BASE = "/html/body/div";
+export const XPATH_ID_BASE = "/html/body/div";
 
 /**Context to save GUI state data in global state*/
 export const DataContext = createContext<{
   state: ReducerState;
-  dispatch: React.Dispatch<{
-    type: ReducerActionEnum;
-    newUserAction?: Action | undefined;
-    newIdObject?: { id: string; element: React.ReactNode } | undefined;
-    newRefObject?: { id: string; ref: MutableRefObject<undefined> };
-  }>;
+  dispatch: React.Dispatch<ActionType>;
+  saveCurrentGuiState: (currentGuiState: Widget[] | null | undefined) => void;
+  firstParent: React.ReactNode | React.ReactNode[];
 }>({
-  state: { actions: [], ids: new Map(), refs: new Map() },
+  state: { actions: [], ids: new Map(), refs: new Map(), guiStates: [] },
   dispatch: () => {},
+  saveCurrentGuiState: () => {},
+  firstParent: undefined,
 });
 
 const Provider = ({
@@ -30,7 +29,7 @@ const Provider = ({
 }: {
   children?: React.ReactNode | React.ReactNode[];
 }) => {
-  const { getSubTree, getCurrentGuiState } = useSubTree();
+  const { getSubTree } = useSubTree();
 
   const reducerKey = "PROVIDER_STATE";
   const { state, dispatch } = usePersistedReducer(
@@ -39,12 +38,24 @@ const Provider = ({
     reducerKey
   );
 
-  const currentGuiState = getCurrentGuiState(children, XPATH_ID_BASE, state);
+  /** saves current state in global storage */
+  const saveCurrentGuiState = (
+    currentGuiState: Widget[] | null | undefined
+  ) => {
+    if (currentGuiState) {
+      dispatch({
+        type: ReducerActionEnum.UPDATE_GUI_STATES,
+        newGuiState: { widgetArray: currentGuiState },
+      });
+      console.log("saved current gui state if it is new");
+    }
+  };
 
-  console.log(state.refs);
   return (
     <>
-      <DataContext.Provider value={{ state, dispatch }}>
+      <DataContext.Provider
+        value={{ state, dispatch, saveCurrentGuiState, firstParent: children }}
+      >
         <PrintDataButton />
         {children ? getSubTree(children, dispatch, XPATH_ID_BASE) : null}
       </DataContext.Provider>
@@ -53,13 +64,21 @@ const Provider = ({
 };
 
 export const CustomButton = () => {
+  const [color, setColor] = useState("red");
+  const [width, setWidth] = useState("300px");
+
   return (
-    <div>
-      <button style={{}}>
-        <div>this is a custom button, can you see its child div?</div>
-        <div>this is a custom button, can you see its child div?</div>
-      </button>
-    </div>
+    <button
+      style={{ height: "200px", color: color, width: width }}
+      onClick={() => {
+        setColor("blue");
+        setWidth("350px");
+        console.log("color should change");
+      }}
+    >
+      <div>this is a custom button, can you see its child div?</div>
+      <div>this is a custom button, can you see its child div?</div>
+    </button>
   );
 };
 
@@ -80,6 +99,7 @@ export const PrintDataButton = () => {
         console.log("current action data", state.actions);
         console.log("current component ids", state.ids);
         console.log("current refs", state.refs);
+        console.log("encountered Gui States", state.guiStates);
       }}
     >
       Print Data to Console
