@@ -15,18 +15,33 @@ export const useGuiStateId = () => {
       if (!widgetArray) {
         return -1;
       }
-      console.log(state);
+
+      let id = state.guiStates.length + 1;
 
       state.guiStates.forEach((s) => {
-        if (
-          isEqual(widgetArray, s.widgetArray) &&
-          currentRoute === s.currentRoute
-        ) {
-          return s.stateId;
+        console.log(s.widgetArray, widgetArray);
+        if (isEqual(widgetArray, s.widgetArray)) {
+          console.log(
+            "state already exists",
+            s,
+            "state was not recorded and id ",
+            s.stateId,
+            " was returned"
+          );
+          id = s.stateId;
         }
       });
 
-      return state.guiStates.length + 1;
+      if (id === state.guiStates.length + 1) {
+        console.log(
+          "state does not exist yet ",
+          widgetArray,
+          " this new state was recorded with id ",
+          state.guiStates.length + 1
+        );
+      }
+
+      return id;
     },
     []
   );
