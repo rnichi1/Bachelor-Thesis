@@ -187,7 +187,7 @@ export const IdWrapper = ({
                     actionType: hasLink
                       ? PossibleAction.ROUTE
                       : PossibleAction.CLICK,
-                    timestamp: e.nativeEvent.timeStamp,
+                    timestamp: new Date().getTime(),
                     elementId: xpathComponentId,
                     nextState: {
                       widgetArray: currentGuiState ? currentGuiState : [],

@@ -18,6 +18,7 @@ import { Widget } from "../../types/guiState";
 import { getTypeMap } from "../../helpers/typeMap";
 import { useLocation } from "react-router-dom";
 import { useGuiStateId } from "../../hooks/useGuiStateId";
+import { PossibleAction } from "../../types/actions";
 
 export const XPATH_ID_BASE = "/html/body/div";
 
@@ -148,7 +149,7 @@ export const PrintDataButton = () => {
 
 /** Button that records first gui state and starts walkthrough for the user */
 export const StartWalkthroughButton = () => {
-  const { state, firstParent, saveCurrentGuiState, typeMap } =
+  const { state, firstParent, saveCurrentGuiState, typeMap, dispatch } =
     useContext(DataContext);
 
   //custom hooks
@@ -172,6 +173,28 @@ export const StartWalkthroughButton = () => {
       location.pathname
     );
 
+    dispatch({
+      type: ReducerActionEnum.UPDATE_ACTIONS,
+      newUserAction: {
+        action: {
+          actionType: PossibleAction.START_WALKTHROUGH,
+          timestamp: new Date().getTime(),
+          elementId: "start-walkthrough-button",
+          nextState: {
+            widgetArray: initialGuiState ? initialGuiState : [],
+            currentRoute: location.pathname,
+            stateId: guiStateId,
+          },
+          prevState: {
+            widgetArray: initialGuiState ? initialGuiState : [],
+            currentRoute: location.pathname,
+            stateId: guiStateId,
+          },
+        },
+        prevActionWasRouting: false,
+      },
+    });
+
     saveCurrentGuiState(initialGuiState, location.pathname, state, guiStateId);
   }, [
     firstParent,
@@ -183,19 +206,86 @@ export const StartWalkthroughButton = () => {
     getGuiStateId,
   ]);
 
+  const endWalkthrough = useCallback(async () => {
+    const finalGuiState = await getCurrentGuiState(
+      firstParent,
+      XPATH_ID_BASE,
+      state,
+      typeMap,
+      location.pathname
+    );
+
+    const guiStateId = await getGuiStateId(
+      state,
+      finalGuiState,
+      location.pathname
+    );
+
+    const prevActionWasRouting =
+      state.actions[state.actions.length - 1] &&
+      state.actions[state.actions.length - 1].actionType === "ROUTE";
+
+    dispatch({
+      type: ReducerActionEnum.UPDATE_ACTIONS,
+      newUserAction: {
+        action: {
+          actionType: PossibleAction.END_WALKTHROUGH,
+          timestamp: new Date().getTime(),
+          elementId: "end-walkthrough-button",
+          nextState: {
+            widgetArray: finalGuiState ? finalGuiState : [],
+            currentRoute: location.pathname,
+            stateId: guiStateId,
+          },
+          prevState: {
+            widgetArray: finalGuiState ? finalGuiState : [],
+            currentRoute: location.pathname,
+            stateId: guiStateId,
+          },
+        },
+        prevActionWasRouting: prevActionWasRouting,
+      },
+    });
+
+    saveCurrentGuiState(finalGuiState, location.pathname, state, guiStateId);
+  }, [
+    firstParent,
+    getCurrentGuiState,
+    saveCurrentGuiState,
+    state,
+    typeMap,
+    location.pathname,
+    getGuiStateId,
+  ]);
+
   return (
-    <button
-      style={{
-        position: "absolute",
-        right: 10,
-        top: 110,
-        width: "100px",
-        height: "40px",
-      }}
-      onClick={startWalkthrough}
-    >
-      Start Walkthrough
-    </button>
+    <>
+      <button
+        style={{
+          position: "absolute",
+          right: 10,
+          top: 110,
+          width: "100px",
+          height: "40px",
+        }}
+        onClick={startWalkthrough}
+      >
+        Start Walkthrough
+      </button>
+
+      <button
+        style={{
+          position: "absolute",
+          right: 10,
+          top: 160,
+          width: "100px",
+          height: "40px",
+        }}
+        onClick={endWalkthrough}
+      >
+        End Walkthrough
+      </button>
+    </>
   );
 };
 
