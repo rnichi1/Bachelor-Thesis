@@ -88,7 +88,13 @@ export const reducer: (
       if (action.newGuiState) {
         let isNewState = true;
         for (let i = 0; i < guiStatesCopy.length; i++) {
-          if (isEqual(action.newGuiState, state.guiStates[i])) {
+          if (
+            isEqual(
+              action.newGuiState.widgetArray,
+              state.guiStates[i].widgetArray
+            ) &&
+            action.newGuiState.currentRoute === state.guiStates[i].currentRoute
+          ) {
             isNewState = false;
           }
         }

@@ -15,10 +15,9 @@ import {
 import { usePersistedReducer } from "../../hooks/usePersistedReducer";
 import { ActionType, ReducerState } from "../../types/reducerTypes";
 import { Widget } from "../../types/guiState";
-import { flatMap, map } from "lodash";
-import { type } from "os";
 import { getTypeMap } from "../../helpers/typeMap";
 import { useLocation } from "react-router-dom";
+import { useGuiStateId } from "../../hooks/useGuiStateId";
 
 export const XPATH_ID_BASE = "/html/body/div";
 
@@ -28,7 +27,9 @@ export const DataContext = createContext<{
   dispatch: React.Dispatch<ActionType>;
   saveCurrentGuiState: (
     currentGuiState: Widget[] | null | undefined,
-    currentRoute: string
+    currentRoute: string,
+    state: ReducerState,
+    guiStateId: number
   ) => void;
   firstParent: React.ReactNode | React.ReactNode[];
   typeMap: Map<string | undefined, string>;
@@ -45,6 +46,7 @@ const Provider = ({
 }: {
   children?: React.ReactNode | React.ReactNode[];
 }) => {
+  //custom hooks
   const { getSubTree, getFunctionalComponentTypes } = useSubTree();
 
   const reducerKey = "PROVIDER_STATE";
@@ -56,13 +58,19 @@ const Provider = ({
 
   /** saves current state in global storage */
   const saveCurrentGuiState = useCallback(
-    (currentGuiState: Widget[] | null | undefined, currentRoute: string) => {
+    (
+      currentGuiState: Widget[] | null | undefined,
+      currentRoute: string,
+      state: ReducerState,
+      guiStateId: number
+    ) => {
       if (currentGuiState) {
         dispatch({
           type: ReducerActionEnum.UPDATE_GUI_STATES,
           newGuiState: {
             widgetArray: currentGuiState,
             currentRoute: currentRoute,
+            stateId: guiStateId,
           },
         });
       }
@@ -105,7 +113,6 @@ export const CustomButton = () => {
       onClick={() => {
         if (color === "blue") setWidth("350px");
         setColor("blue");
-        console.log("color should change");
       }}
     >
       <div>this is a custom button, can you see its child div?</div>
@@ -143,12 +150,15 @@ export const PrintDataButton = () => {
 export const StartWalkthroughButton = () => {
   const { state, firstParent, saveCurrentGuiState, typeMap } =
     useContext(DataContext);
+
+  //custom hooks
   const { getCurrentGuiState } = useSubTree();
+  const { getGuiStateId } = useGuiStateId();
 
   const location = useLocation();
 
-  const startWalkthrough = useCallback(() => {
-    const initialGuiState = getCurrentGuiState(
+  const startWalkthrough = useCallback(async () => {
+    const initialGuiState = await getCurrentGuiState(
       firstParent,
       XPATH_ID_BASE,
       state,
@@ -156,8 +166,22 @@ export const StartWalkthroughButton = () => {
       location.pathname
     );
 
-    saveCurrentGuiState(initialGuiState, location.pathname);
-  }, []);
+    const guiStateId = await getGuiStateId(
+      state,
+      initialGuiState,
+      location.pathname
+    );
+
+    saveCurrentGuiState(initialGuiState, location.pathname, state, guiStateId);
+  }, [
+    firstParent,
+    getCurrentGuiState,
+    saveCurrentGuiState,
+    state,
+    typeMap,
+    location.pathname,
+    getGuiStateId,
+  ]);
 
   return (
     <button

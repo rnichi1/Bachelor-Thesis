@@ -37,27 +37,14 @@ export function usePersistedReducer(
     /** adjust state, such that more complicated data types like Map can be saved and reconstructed from localStorage */
     const adjustedState = {
       actions: state.actions,
-      ids: Array.from(state.ids),
+      ids: [],
       guiStates: state.guiStates ? state.guiStates : [],
     };
-    console.log(stateEqual);
-    console.log(adjustedState);
     if (!stateEqual) {
       try {
         //Array to remove cyclic references, which stringify doesn't work with.
         var seen: any[] = [];
-        const stringifiedState = JSON.stringify(
-          adjustedState,
-          function (key, val) {
-            if (val != null && typeof val == "object") {
-              if (seen.indexOf(val) >= 0) {
-                return;
-              }
-              seen.push(val);
-            }
-            return val;
-          }
-        );
+        const stringifiedState = JSON.stringify(adjustedState);
         localStorage.setItem(storageKey, stringifiedState);
       } catch (e) {
         console.log(e);

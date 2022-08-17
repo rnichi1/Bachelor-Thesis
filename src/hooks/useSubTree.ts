@@ -159,7 +159,6 @@ export const useSubTree = () => {
         if (ref && ref.current) {
           try {
             boundingRect = (ref.current as any).getBoundingClientRect();
-            console.log("got new bounding rect");
           } catch (e) {
             console.log(
               e,

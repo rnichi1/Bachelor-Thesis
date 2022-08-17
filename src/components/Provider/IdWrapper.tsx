@@ -5,6 +5,8 @@ import { PossibleAction } from "../../types/actions";
 import { DataContext, XPATH_ID_BASE } from "./Provider";
 import { useSubTree } from "../../hooks/useSubTree";
 import { useLocation } from "react-router-dom";
+import { Widget } from "../../types/guiState";
+import { useGuiStateId } from "../../hooks/useGuiStateId";
 
 /** This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
  * @param children wrapped component.
@@ -37,8 +39,10 @@ export const IdWrapper = ({
   //Hook for getting and setting persistent state
   const { dispatch, saveCurrentGuiState, firstParent, state } =
     useContext(DataContext);
-  //Hook for getting the functions for traversing the tree
+
+  //custom hooks
   const { getSubTree, getCurrentGuiState } = useSubTree();
+  const { getGuiStateId } = useGuiStateId();
 
   //get current route
   const location = useLocation();
@@ -129,9 +133,7 @@ export const IdWrapper = ({
                 e.stopPropagation();
               }
 
-              props.onClick && (await props.onClick());
-
-              const currentGuiState = await getCurrentGuiState(
+              const prevGuiState = await getCurrentGuiState(
                 firstParent,
                 XPATH_ID_BASE,
                 state,
@@ -139,38 +141,78 @@ export const IdWrapper = ({
                 location.pathname
               );
 
-              console.log(
-                "the ",
-                element.type,
-                " with id ",
-                xpathComponentId,
-                " was clicked on ",
-                new Date(),
-                ". Here is the element: ",
-                element
-              );
+              props.onClick && (await props.onClick());
 
-              dispatch({
-                type: ReducerActionEnum.UPDATE_ACTIONS,
-                newUserAction: {
-                  actionType: hasLink
-                    ? PossibleAction.ROUTE
-                    : PossibleAction.CLICK,
-                  timestamp: e.nativeEvent.timeStamp,
-                  elementId: xpathId,
-                },
-              });
+              // Check if it is the actually clicked on target, or just one that the event got propagated to.
+              if (e.target === ref.current) {
+                const currentGuiState = await getCurrentGuiState(
+                  firstParent,
+                  XPATH_ID_BASE,
+                  state,
+                  typeMap,
+                  location.pathname
+                );
 
-              dispatch({
-                type: ReducerActionEnum.UPDATE_IDS,
-                newIdObject: {
-                  id: xpathId,
-                  element: element,
-                },
-              });
+                const prevGuiStateID = await getGuiStateId(
+                  state,
+                  prevGuiState,
+                  location.pathname
+                );
 
-              //save the current gui state in the global storage
-              saveCurrentGuiState(currentGuiState, location.pathname);
+                const currentGuiStateID = await getGuiStateId(
+                  state,
+                  currentGuiState,
+                  location.pathname
+                );
+
+                console.log(
+                  "the ",
+                  element.type,
+                  " with id ",
+                  xpathComponentId,
+                  " was clicked on ",
+                  new Date(),
+                  ". Here is the element: ",
+                  element
+                );
+
+                dispatch({
+                  type: ReducerActionEnum.UPDATE_ACTIONS,
+                  newUserAction: {
+                    actionType: hasLink
+                      ? PossibleAction.ROUTE
+                      : PossibleAction.CLICK,
+                    timestamp: e.nativeEvent.timeStamp,
+                    elementId: xpathComponentId,
+                    nextState: {
+                      widgetArray: currentGuiState ? currentGuiState : [],
+                      currentRoute: location.pathname,
+                      stateId: currentGuiStateID,
+                    },
+                    prevState: {
+                      widgetArray: prevGuiState ? prevGuiState : [],
+                      currentRoute: location.pathname,
+                      stateId: prevGuiStateID,
+                    },
+                  },
+                });
+
+                dispatch({
+                  type: ReducerActionEnum.UPDATE_IDS,
+                  newIdObject: {
+                    id: xpathId,
+                    element: element,
+                  },
+                });
+
+                //save the current gui state in the global storage
+                saveCurrentGuiState(
+                  currentGuiState,
+                  location.pathname,
+                  state,
+                  currentGuiStateID
+                );
+              }
             },
             xpathid: xpathComponentId,
             ref: ref,
