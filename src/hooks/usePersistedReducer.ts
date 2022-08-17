@@ -3,6 +3,9 @@ import deepEqual from "fast-deep-equal/es6";
 import { usePrevious } from "./usePrevious";
 import { ReducerState, ReducerType } from "../types/reducerTypes";
 
+//SOURCE: https://dev.to/sgolovine/persisting-usereducer-with-a-custom-react-hook-1j27 accessed on 17.07.2022
+
+/** Persists global state over refreshes and routing by storing it and fetching it through LocalStorage in the browser */
 export function usePersistedReducer(
   reducer: ReducerType,
   initialState: ReducerState,
@@ -22,6 +25,7 @@ export function usePersistedReducer(
           ids: new Map(ids),
           refs: new Map(),
           guiStates: guiStates,
+          walkthroughActive: false,
         };
       } catch (error) {
         return initialState;
@@ -34,11 +38,12 @@ export function usePersistedReducer(
   useEffect(() => {
     const stateEqual = deepEqual(prevState, state);
 
-    /** adjust state, such that more complicated data types like Map can be saved and reconstructed from localStorage */
+    /** leaves out more complicated data types like Map, which don't behave well with stringify */
     const adjustedState = {
       actions: state.actions,
       ids: [],
       guiStates: state.guiStates ? state.guiStates : [],
+      walkthroughActive: state.walkthroughActive,
     };
     if (!stateEqual) {
       try {

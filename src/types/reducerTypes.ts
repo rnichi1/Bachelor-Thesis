@@ -14,6 +14,7 @@ export type ReducerState = {
   actions: Action[];
   ids: Map<string, React.ReactNode>;
   refs: Map<string, MutableRefObject<HTMLElement>>;
+  walkthroughActive: boolean;
 };
 
 export type ActionType = {

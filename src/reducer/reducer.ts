@@ -11,13 +11,16 @@ export const initialState: ReducerState = {
   ids: new Map(),
   refs: new Map(),
   guiStates: [],
+  walkthroughActive: false,
 };
 
 export enum ReducerActionEnum {
-  UPDATE_ACTIONS,
-  UPDATE_IDS,
-  UPDATE_REFS,
-  UPDATE_GUI_STATES,
+  UPDATE_ACTIONS = "UPDATE_ACTIONS",
+  UPDATE_IDS = "UPDATE_IDS",
+  UPDATE_REFS = "UPDATE_REFS",
+  UPDATE_GUI_STATES = "UPDATE_GUI_STATES",
+  START_WALKTHROUGH = "START_WALKTHROUGH",
+  END_WALKTHROUGH = "END_WALKTHROUGH",
 }
 
 export const reducer: (
@@ -123,6 +126,12 @@ export const reducer: (
         ...state,
         guiStates: guiStatesCopy,
       };
+
+    case ReducerActionEnum.START_WALKTHROUGH:
+      return { ...state, walkthroughActive: true };
+    case ReducerActionEnum.END_WALKTHROUGH:
+      return { ...state, walkthroughActive: false };
+
     default:
       return state;
   }
