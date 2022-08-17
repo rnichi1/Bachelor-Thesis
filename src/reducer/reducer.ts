@@ -4,6 +4,7 @@ import { ReducerState } from "../types/reducerTypes";
 import { MutableRefObject } from "react";
 import { GuiState } from "../types/guiState";
 import { isEqual } from "lodash";
+import { act } from "react-dom/test-utils";
 
 export const initialState: ReducerState = {
   actions: [],
@@ -23,7 +24,7 @@ export const reducer: (
   state: ReducerState,
   action: {
     type: ReducerActionEnum;
-    newUserAction?: Action;
+    newUserAction?: { action: Action; prevActionWasRouting?: boolean };
     newIdObject?: {
       id: string;
       element: React.ReactNode;
@@ -37,7 +38,7 @@ export const reducer: (
   state: ReducerState,
   action: {
     type: ReducerActionEnum;
-    newUserAction?: Action;
+    newUserAction?: { action: Action; prevActionWasRouting?: boolean };
     newIdObject?: {
       id: string;
       element: React.ReactNode;
@@ -51,10 +52,26 @@ export const reducer: (
 ) => {
   switch (action.type) {
     case ReducerActionEnum.UPDATE_ACTIONS:
+      if (action.newUserAction?.prevActionWasRouting) {
+        const stateActionsCopy = [...state.actions];
+        stateActionsCopy[stateActionsCopy.length - 1].nextState =
+          action.newUserAction.action.nextState;
+        console.log(
+          "since we routed before, nextState was changed to: ",
+          action.newUserAction.action.nextState
+        );
+        console.log(stateActionsCopy[stateActionsCopy.length - 1]);
+        return {
+          ...state,
+          actions: action.newUserAction?.action
+            ? [...stateActionsCopy, action.newUserAction.action]
+            : state.actions,
+        };
+      }
       return {
         ...state,
-        actions: action.newUserAction
-          ? [...state.actions, action.newUserAction]
+        actions: action.newUserAction?.action
+          ? [...state.actions, action.newUserAction.action]
           : state.actions,
       };
     case ReducerActionEnum.UPDATE_IDS:

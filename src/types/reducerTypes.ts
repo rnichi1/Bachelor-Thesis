@@ -18,7 +18,7 @@ export type ReducerState = {
 
 export type ActionType = {
   type: ReducerActionEnum;
-  newUserAction?: Action;
+  newUserAction?: { action: Action; prevActionWasRouting?: boolean };
   newIdObject?: { id: string; element: React.ReactNode };
   newRefObject?: {
     id: string;

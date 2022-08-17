@@ -144,41 +144,46 @@ export const IdWrapper = ({
               props.onClick && (await props.onClick());
 
               // Check if it is the actually clicked on target, or just one that the event got propagated to.
-              if (e.target === ref.current) {
-                const currentGuiState = await getCurrentGuiState(
-                  firstParent,
-                  XPATH_ID_BASE,
-                  state,
-                  typeMap,
-                  location.pathname
-                );
 
-                const prevGuiStateID = await getGuiStateId(
-                  state,
-                  prevGuiState,
-                  location.pathname
-                );
+              const currentGuiState = await getCurrentGuiState(
+                firstParent,
+                XPATH_ID_BASE,
+                state,
+                typeMap,
+                location.pathname
+              );
 
-                const currentGuiStateID = await getGuiStateId(
-                  state,
-                  currentGuiState,
-                  location.pathname
-                );
+              const prevGuiStateID = await getGuiStateId(
+                state,
+                prevGuiState,
+                location.pathname
+              );
 
-                console.log(
-                  "the ",
-                  element.type,
-                  " with id ",
-                  xpathComponentId,
-                  " was clicked on ",
-                  new Date(),
-                  ". Here is the element: ",
-                  element
-                );
+              const currentGuiStateID = await getGuiStateId(
+                state,
+                currentGuiState,
+                location.pathname
+              );
 
-                dispatch({
-                  type: ReducerActionEnum.UPDATE_ACTIONS,
-                  newUserAction: {
+              console.log(
+                "the ",
+                element.type,
+                " with id ",
+                xpathComponentId,
+                " was clicked on ",
+                new Date(),
+                ". Here is the element: ",
+                element
+              );
+
+              const prevActionWasRouting =
+                state.actions[state.actions.length - 1] &&
+                state.actions[state.actions.length - 1].actionType === "ROUTE";
+
+              dispatch({
+                type: ReducerActionEnum.UPDATE_ACTIONS,
+                newUserAction: {
+                  action: {
                     actionType: hasLink
                       ? PossibleAction.ROUTE
                       : PossibleAction.CLICK,
@@ -195,24 +200,25 @@ export const IdWrapper = ({
                       stateId: prevGuiStateID,
                     },
                   },
-                });
+                  prevActionWasRouting: prevActionWasRouting,
+                },
+              });
 
-                dispatch({
-                  type: ReducerActionEnum.UPDATE_IDS,
-                  newIdObject: {
-                    id: xpathId,
-                    element: element,
-                  },
-                });
+              dispatch({
+                type: ReducerActionEnum.UPDATE_IDS,
+                newIdObject: {
+                  id: xpathId,
+                  element: element,
+                },
+              });
 
-                //save the current gui state in the global storage
-                saveCurrentGuiState(
-                  currentGuiState,
-                  location.pathname,
-                  state,
-                  currentGuiStateID
-                );
-              }
+              //save the current gui state in the global storage
+              saveCurrentGuiState(
+                currentGuiState,
+                location.pathname,
+                state,
+                currentGuiStateID
+              );
             },
             xpathid: xpathComponentId,
             ref: ref,
