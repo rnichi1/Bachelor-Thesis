@@ -16,7 +16,7 @@ import { useGuiStateId } from "../../hooks/useGuiStateId";
  * but for safety measures it is included. It is also used for identifying a route action.
  * @param typeMap a map of types of each functional component inside the application, used for the xpath id.
  * */
-export const IdWrapper = ({
+export const HocWrapper = ({
   children,
   xpathId,
   xpathComponentId,
@@ -90,6 +90,7 @@ export const IdWrapper = ({
 
   return childElement;
 
+  /** This function clones an element passed to it and adds the necessary data retrieval functionality to each action a user can take on the element. */
   function clone(element: React.ReactElement, xpathComponentId: string) {
     //Overwrite submit function, but keep old functionality
     function handleSubmit(e: any) {
@@ -97,6 +98,84 @@ export const IdWrapper = ({
       if (props.onSubmit) props.onSubmit(e);
       console.log("You clicked submit for the injected function.");
     }
+
+    const handleClick = async (e: any) => {
+      e.persist();
+      if (hasLink) {
+        e.stopPropagation();
+      }
+
+      // await the recording of the GUI state before any changes are made by the original click functionality.
+      const prevGuiState = await getCurrentGuiState(
+        firstParent,
+        XPATH_ID_BASE,
+        state,
+        typeMap,
+        location.pathname
+      );
+
+      // call the old onClick function, such that no original functionality gets lost.
+      props.onClick && (await props.onClick());
+
+      // get the GUI state after the click functionality has been executed.
+      const currentGuiState = await getCurrentGuiState(
+        firstParent,
+        XPATH_ID_BASE,
+        state,
+        typeMap,
+        location.pathname
+      );
+
+      // compute GUI state id of previous state
+      const prevGuiStateID = await getGuiStateId(
+        state,
+        prevGuiState,
+        location.pathname
+      );
+
+      // compute GUI state id of current state
+      const currentGuiStateID = await getGuiStateId(
+        state,
+        currentGuiState,
+        location.pathname
+      );
+
+      // compute if the app routed after the click action
+      const prevActionWasRouting =
+        state.actions[state.actions.length - 1] &&
+        state.actions[state.actions.length - 1].actionType === "ROUTE";
+
+      // save the action data to the global storage
+      dispatch({
+        type: ReducerActionEnum.UPDATE_ACTIONS,
+        newUserAction: {
+          action: {
+            actionType: hasLink ? PossibleAction.ROUTE : PossibleAction.CLICK,
+            timestamp: new Date().getTime(),
+            elementId: xpathComponentId,
+            nextState: {
+              widgetArray: currentGuiState ? currentGuiState : [],
+              currentRoute: location.pathname,
+              stateId: currentGuiStateID,
+            },
+            prevState: {
+              widgetArray: prevGuiState ? prevGuiState : [],
+              currentRoute: location.pathname,
+              stateId: prevGuiStateID,
+            },
+          },
+          prevActionWasRouting: prevActionWasRouting,
+        },
+      });
+
+      // save the current gui state in the global storage
+      saveCurrentGuiState(
+        currentGuiState,
+        location.pathname,
+        state,
+        currentGuiStateID
+      );
+    };
 
     const { props, type } = element;
 
@@ -117,114 +196,21 @@ export const IdWrapper = ({
 
     return React.cloneElement(
       element,
-      type === "form"
-        ? {
-            ...props,
-            onSubmit: handleSubmit,
-            xpathId: xpathComponentId,
-          }
-        : {
-            ...props,
-            component: null,
-            render: null,
-            onClick: async (e: any) => {
-              e.persist();
-              if (hasLink) {
-                e.stopPropagation();
-              }
+      {
+        // keep the original props
+        ...props,
+        // remove the component and render props for Routes
+        component: null,
+        render: null,
+        // overwrite the onClick function, such that it sends data to the global storage.
+        onClick: handleClick,
+        // overwrite the onSubmit function, such that it sends data to the global storage, if the element is a form.
+        onSubmit: type === "form" ? handleSubmit : props.onSubmit,
+        xpathid: xpathComponentId,
+        ref: ref,
+      },
 
-              const prevGuiState = await getCurrentGuiState(
-                firstParent,
-                XPATH_ID_BASE,
-                state,
-                typeMap,
-                location.pathname
-              );
-
-              props.onClick && (await props.onClick());
-
-              // Check if it is the actually clicked on target, or just one that the event got propagated to.
-
-              const currentGuiState = await getCurrentGuiState(
-                firstParent,
-                XPATH_ID_BASE,
-                state,
-                typeMap,
-                location.pathname
-              );
-
-              const prevGuiStateID = await getGuiStateId(
-                state,
-                prevGuiState,
-                location.pathname
-              );
-
-              const currentGuiStateID = await getGuiStateId(
-                state,
-                currentGuiState,
-                location.pathname
-              );
-
-              console.log(
-                "the ",
-                element.type,
-                " with id ",
-                xpathComponentId,
-                " was clicked on ",
-                new Date(),
-                ". Here is the element: ",
-                element
-              );
-
-              const prevActionWasRouting =
-                state.actions[state.actions.length - 1] &&
-                state.actions[state.actions.length - 1].actionType === "ROUTE";
-
-              dispatch({
-                type: ReducerActionEnum.UPDATE_ACTIONS,
-                newUserAction: {
-                  action: {
-                    actionType: hasLink
-                      ? PossibleAction.ROUTE
-                      : PossibleAction.CLICK,
-                    timestamp: new Date().getTime(),
-                    elementId: xpathComponentId,
-                    nextState: {
-                      widgetArray: currentGuiState ? currentGuiState : [],
-                      currentRoute: location.pathname,
-                      stateId: currentGuiStateID,
-                    },
-                    prevState: {
-                      widgetArray: prevGuiState ? prevGuiState : [],
-                      currentRoute: location.pathname,
-                      stateId: prevGuiStateID,
-                    },
-                  },
-                  prevActionWasRouting: prevActionWasRouting,
-                },
-              });
-
-              dispatch({
-                type: ReducerActionEnum.UPDATE_IDS,
-                newIdObject: {
-                  id: xpathId,
-                  element: element,
-                },
-              });
-
-              //save the current gui state in the global storage
-              saveCurrentGuiState(
-                currentGuiState,
-                location.pathname,
-                state,
-                currentGuiStateID
-              );
-            },
-            xpathid: xpathComponentId,
-            ref: ref,
-          },
-
-      //add children and recursively call subTree function
+      // add children and recursively call getSubTree function, which wraps all children in the HOC.
       getSubTree(element_children, dispatch, xpathComponentId, typeMap, hasLink)
     );
   }

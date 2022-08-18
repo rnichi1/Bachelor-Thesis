@@ -272,7 +272,7 @@ export const StartWalkthroughButton = () => {
           console.log("current component ids", state.ids);
           console.log("current refs", state.refs);
           console.log("encountered Gui States", state.guiStates);
-          console.log("encountered Gui States", state.walkthroughActive);
+          console.log("is walkthrough active", state.walkthroughActive);
         }}
       >
         Print Data to Console

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { createElement, ReactNode, useCallback, useMemo } from "react";
 
-import { IdWrapper } from "../components/Provider/IdWrapper";
+import { HocWrapper } from "../components/Provider/hocWrapper";
 import { Widget } from "../types/guiState";
 import { ActionType, ReducerState } from "../types/reducerTypes";
 import { useXpath } from "./useXpath";
@@ -47,7 +47,7 @@ export const useSubTree = () => {
           typeMap
         );
 
-        //skip links, as they do not work with the IdWrapper, and add to id that there is a link on the children
+        //skip links, as they do not work with the HocWrapper, and add to id that there is a link on the children
         if (
           (element.type as unknown as { displayName: string }).displayName ===
             "Link" ||
@@ -63,7 +63,7 @@ export const useSubTree = () => {
 
         /** wrapped element in higher order component to add needed properties to it and call getSubTree function recursively */
         const wrappedElement = createElement(
-          IdWrapper as any,
+          HocWrapper as any,
           {
             ...props,
             xpathId: xpathId,
