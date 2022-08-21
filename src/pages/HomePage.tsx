@@ -1,5 +1,5 @@
 import * as React from "react";
-import { NavLink, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { CustomButton } from "../components/Provider/Provider";
 
 export const HomePage = () => {

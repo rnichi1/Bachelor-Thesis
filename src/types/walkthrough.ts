@@ -1,5 +1,4 @@
 import { GuiState } from "./guiState";
-import { Action } from "./actions";
 
 type Walkthrough = {
   startingAction: NextAction;

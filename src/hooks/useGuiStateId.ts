@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { GuiState, Widget } from "../types/guiState";
+import { Widget } from "../types/guiState";
 import { ReducerState } from "../types/reducerTypes";
 import { isEqual } from "lodash";
 
@@ -7,11 +7,7 @@ import { isEqual } from "lodash";
 export const useGuiStateId = () => {
   /** Function that either fetches the existing id for existing states or creates a new one. */
   const getGuiStateId = useCallback(
-    (
-      state: ReducerState,
-      widgetArray: Widget[] | null | undefined,
-      currentRoute: string
-    ) => {
+    (state: ReducerState, widgetArray: Widget[] | null | undefined) => {
       if (!widgetArray) {
         return -1;
       }

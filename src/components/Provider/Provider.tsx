@@ -1,11 +1,4 @@
-import React, {
-  createContext,
-  Dispatch,
-  SetStateAction,
-  useCallback,
-  useContext,
-  useState,
-} from "react";
+import React, { createContext, useCallback, useContext, useState } from "react";
 import { useSubTree } from "../../hooks/useSubTree";
 import {
   initialState,
@@ -22,7 +15,7 @@ import { PossibleAction } from "../../types/actions";
 
 export const XPATH_ID_BASE = "/html/body/div";
 
-/**Context to save GUI state data in global state*/
+/** Context to save GUI state data in global state */
 export const DataContext = createContext<{
   state: ReducerState;
   dispatch: React.Dispatch<ActionType>;
@@ -150,11 +143,7 @@ export const StartWalkthroughButton = () => {
       location.pathname
     );
 
-    const guiStateId = await getGuiStateId(
-      state,
-      initialGuiState,
-      location.pathname
-    );
+    const guiStateId = await getGuiStateId(state, initialGuiState);
 
     dispatch({ type: ReducerActionEnum.START_WALKTHROUGH });
 
@@ -200,11 +189,7 @@ export const StartWalkthroughButton = () => {
       location.pathname
     );
 
-    const guiStateId = await getGuiStateId(
-      state,
-      finalGuiState,
-      location.pathname
-    );
+    const guiStateId = await getGuiStateId(state, finalGuiState);
 
     const prevActionWasRouting =
       state.actions[state.actions.length - 1] &&

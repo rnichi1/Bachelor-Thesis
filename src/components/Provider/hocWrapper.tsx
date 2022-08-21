@@ -1,11 +1,10 @@
 import * as React from "react";
-import { useCallback, useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { ReducerActionEnum } from "../../reducer/reducer";
 import { PossibleAction } from "../../types/actions";
 import { DataContext, XPATH_ID_BASE } from "./Provider";
 import { useSubTree } from "../../hooks/useSubTree";
 import { useLocation } from "react-router-dom";
-import { Widget } from "../../types/guiState";
 import { useGuiStateId } from "../../hooks/useGuiStateId";
 
 /** This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
@@ -127,18 +126,10 @@ export const HocWrapper = ({
       );
 
       // compute GUI state id of previous state
-      const prevGuiStateID = await getGuiStateId(
-        state,
-        prevGuiState,
-        location.pathname
-      );
+      const prevGuiStateID = await getGuiStateId(state, prevGuiState);
 
       // compute GUI state id of current state
-      const currentGuiStateID = await getGuiStateId(
-        state,
-        currentGuiState,
-        location.pathname
-      );
+      const currentGuiStateID = await getGuiStateId(state, currentGuiState);
 
       // compute if the app routed after the click action
       const prevActionWasRouting =

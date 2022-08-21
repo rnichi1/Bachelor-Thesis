@@ -6,6 +6,7 @@ import { Provider } from "./components";
 import { HomePage } from "./pages/HomePage";
 import { SecondaryPage } from "./pages/SecondaryPage";
 
+//can be used for testing locally
 export const Routes = () => {
   const history = createBrowserHistory();
   return (

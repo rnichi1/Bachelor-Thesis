@@ -4,7 +4,6 @@ import { ReducerState } from "../types/reducerTypes";
 import { MutableRefObject } from "react";
 import { GuiState } from "../types/guiState";
 import { isEqual } from "lodash";
-import { act } from "react-dom/test-utils";
 
 export const initialState: ReducerState = {
   actions: [],

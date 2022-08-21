@@ -1,8 +1,5 @@
 import * as React from "react";
-import { ReactNode, useCallback, useMemo } from "react";
-import { ReducerState } from "../types/reducerTypes";
-import { cloneDeep } from "lodash";
-import { Widget } from "../types/guiState";
+import { useCallback, useMemo } from "react";
 
 export const useXpath = () => {
   /** computes occurrence counters of specific html elements inside the children */

@@ -48,8 +48,6 @@ export function usePersistedReducer(
     };
     if (!stateEqual) {
       try {
-        //Array to remove cyclic references, which stringify doesn't work with.
-        var seen: any[] = [];
         const stringifiedState = JSON.stringify(adjustedState);
         localStorage.setItem(storageKey, stringifiedState);
       } catch (e) {

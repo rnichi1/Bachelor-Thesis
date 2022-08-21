@@ -5,7 +5,6 @@ import { HocWrapper } from "../components/Provider/hocWrapper";
 import { Widget } from "../types/guiState";
 import { ActionType, ReducerState } from "../types/reducerTypes";
 import { useXpath } from "./useXpath";
-import { useLocation } from "react-router-dom";
 
 /** Custom React Hook with getSubTree function, which is used to add a higher order component to each valid component and element in the react ui tree.
  */
@@ -194,12 +193,6 @@ export const useSubTree = () => {
     },
     [getXpathIndexMap, getXpathId]
   );
-
-  type TypeArrayType = (
-    | { name: string; type: string; typeArray: TypeArrayType }
-    | null
-    | undefined
-  )[];
 
   /** creates a nested array with objects, which contain the type of each functional component inside the app to be able to create xpath id's */
   const getFunctionalComponentTypes = useCallback(
