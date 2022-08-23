@@ -17,7 +17,7 @@ import { type } from "os";
 /** Custom React Hook with getSubTree function, which is used to add a higher order component to each valid component and element in the react ui tree.
  */
 export const useSubTree = () => {
-  const { getXpathId, getXpathIndexMap } = useXpath();
+  const { getXpathId } = useXpath();
 
   /**
    * returns a children subtree of any component as a React Node with custom props to collect user action data.
@@ -34,11 +34,6 @@ export const useSubTree = () => {
       typeMap: Map<string | undefined, string>,
       hasLink?: boolean
     ): React.ReactNode | React.ReactNode[] => {
-      /** occurrence of specific html elements inside children array (e.g. how many div elements are in the children array, how many input element, etc.) to know if brackets are needed, if it is 1 or less, the brackets are omitted in xPath. */
-      let componentIndexMap = getXpathIndexMap(children, typeMap);
-      //keep track of count of already found html element types to write correct index in id
-      let currentIndexMap = new Map();
-
       const typesMap = new Map();
 
       return React.Children.map(children, (element: React.ReactNode, i) => {
@@ -47,14 +42,6 @@ export const useSubTree = () => {
 
         //destructure element properties
         const { props } = element;
-
-        const xpathComponentId = getXpathId(
-          element,
-          xpathId,
-          componentIndexMap,
-          currentIndexMap,
-          typeMap
-        );
 
         //skip links, as they do not work with the HocWrapper, and add to id that there is a link on the children
         if (
@@ -75,9 +62,8 @@ export const useSubTree = () => {
           HocWrapper as any,
           {
             ...props,
-            xpathId: xpathId,
+            xpathId,
             loopIndex: i,
-            xpathComponentId,
             typeMap,
             hasLink,
             typesMap,
@@ -88,72 +74,7 @@ export const useSubTree = () => {
         return wrappedElement;
       });
     },
-    [getXpathIndexMap, getXpathId]
-  );
-
-  const getTypeMap = useCallback(
-    (
-      children: React.ReactNode | React.ReactNode[],
-      dispatch: React.Dispatch<ActionType>,
-      xpathId: string,
-      typeMap: Map<string | undefined, string>,
-      hasLink?: boolean
-    ): React.ReactNode | React.ReactNode[] => {
-      /** occurrence of specific html elements inside children array (e.g. how many div elements are in the children array, how many input element, etc.) to know if brackets are needed, if it is 1 or less, the brackets are omitted in xPath. */
-      let componentIndexMap = getXpathIndexMap(children, typeMap);
-      //keep track of count of already found html element types to write correct index in id
-      let currentIndexMap = new Map();
-
-      const typesMap = new Map();
-
-      return React.Children.map(children, (element: React.ReactNode, i) => {
-        //Check if element is an element that React can render
-        if (!React.isValidElement(element)) return element;
-
-        //destructure element properties
-        const { props } = element;
-
-        const xpathComponentId = getXpathId(
-          element,
-          xpathId,
-          componentIndexMap,
-          currentIndexMap,
-          typeMap
-        );
-
-        //skip links, as they do not work with the HocWrapper, and add to id that there is a link on the children
-        if (
-          (element.type as unknown as { displayName: string }).displayName ===
-            "Link" ||
-          (element.type as unknown as { displayName: string }).displayName ===
-            "NavLink"
-        ) {
-          return React.cloneElement(
-            element,
-            { ...props },
-            getSubTree(props.children, dispatch, xpathId + "/a", typeMap, true)
-          );
-        }
-
-        /** wrapped element in higher order component to add needed properties to it and call getSubTree function recursively */
-        const wrappedElement = createElement(
-          HocWrapper as any,
-          {
-            ...props,
-            xpathId: xpathId,
-            loopIndex: i,
-            xpathComponentId,
-            typeMap,
-            hasLink,
-            typesMap,
-          },
-          element
-        );
-
-        return wrappedElement;
-      });
-    },
-    [getXpathIndexMap, getXpathId]
+    [getXpathId]
   );
 
   /** computes current gui state */
@@ -165,8 +86,6 @@ export const useSubTree = () => {
       typeMap: Map<string | undefined, string>,
       route?: string
     ) => {
-      /** occurrence of specific html elements inside children array (e.g. how many div elements are in the children array, how many input element, etc.) to know if brackets are needed, if it is 1 or less, the brackets are omitted in xPath. */
-      let componentIndexMap = getXpathIndexMap(children, typeMap);
       //keep track of count of already found html element types to write correct index in id
       let currentIndexMap = new Map();
 
@@ -178,13 +97,7 @@ export const useSubTree = () => {
         let xpathComponentId = "";
 
         // compute Xpath Id
-        xpathComponentId = getXpathId(
-          element,
-          xpathId,
-          componentIndexMap,
-          currentIndexMap,
-          typeMap
-        );
+        xpathComponentId = "";
 
         let element_children = [];
 
@@ -267,7 +180,7 @@ export const useSubTree = () => {
         return widget;
       });
     },
-    [getXpathIndexMap, getXpathId]
+    [getXpathId]
   );
 
   /** creates a nested array with objects, which contain the type of each functional component inside the app to be able to create xpath id's. Important to note is that

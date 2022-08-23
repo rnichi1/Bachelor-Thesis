@@ -7,6 +7,7 @@ import { useSubTree } from "../../hooks/useSubTree";
 import { useGuiStateId } from "../../hooks/useGuiStateId";
 import ReactDOM from "react-dom";
 import { types } from "util";
+import { useXpath } from "../../hooks/useXpath";
 
 /** This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
  * @param children wrapped component.
@@ -19,14 +20,12 @@ import { types } from "util";
 export const HocWrapper = ({
   children,
   xpathId,
-  xpathComponentId,
   typeMap,
   hasLink,
   typesMap,
 }: {
   children: React.ReactElement;
   xpathId: string;
-  xpathComponentId: string;
   typeMap: Map<string | undefined, string>;
   hasLink?: boolean;
   typesMap: Map<string, number>;
@@ -49,6 +48,7 @@ export const HocWrapper = ({
     recursivelyInstantiateFunctionalComponent,
   } = useSubTree();
   const { getGuiStateId } = useGuiStateId();
+  const { getXpathId } = useXpath();
 
   //create ref for element
   const ref: React.MutableRefObject<HTMLElement> = useRef<any>();
@@ -57,22 +57,23 @@ export const HocWrapper = ({
 
   let childElement: React.ReactNode;
 
-  console.log(ReactDOM.findDOMNode(ref.current));
+  let xpathComponentId = "";
+
   if (ref.current) {
-    if (
-      typesMap &&
-      typesMap.has((ReactDOM.findDOMNode(ref.current) as any).localName)
-    ) {
-      typesMap.set(
-        (ReactDOM.findDOMNode(ref.current) as any).localName,
-        typesMap.get((ReactDOM.findDOMNode(ref.current) as any).localName)! + 1
-      );
-    } else {
-      typesMap.set((ReactDOM.findDOMNode(ref.current) as any).localName, 1);
+    const componentType = (ReactDOM.findDOMNode(ref.current) as any).localName;
+    if (!componentType) {
+      console.log(ref.current);
     }
+    if (typesMap && typesMap.has(componentType)) {
+      typesMap.set(componentType, typesMap.get(componentType)! + 1);
+    } else {
+      typesMap.set(componentType, 1);
+    }
+
+    xpathComponentId = getXpathId(children, xpathId, typesMap, componentType);
   }
-  //TODO: implement this as a fake xpath with [1] even if theres only one element.
-  console.log(typesMap);
+
+  //TODO: Think about implementing separate ref ids for gui state to be fetchable.
 
   if (typeof type === "function" && !props.children) {
     //check that it is not a React Router specific component
