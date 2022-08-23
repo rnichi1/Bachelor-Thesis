@@ -1,4 +1,10 @@
-import React, { createContext, useCallback, useContext, useState } from "react";
+import React, {
+  createContext,
+  forwardRef,
+  useCallback,
+  useContext,
+  useState,
+} from "react";
 import { useSubTree } from "../../hooks/useSubTree";
 import {
   initialState,
@@ -9,9 +15,9 @@ import { usePersistedReducer } from "../../hooks/usePersistedReducer";
 import { ActionType, ReducerState } from "../../types/reducerTypes";
 import { Widget } from "../../types/guiState";
 import { getTypeMap } from "../../helpers/typeMap";
-import { useLocation } from "react-router-dom";
 import { useGuiStateId } from "../../hooks/useGuiStateId";
 import { PossibleAction } from "../../types/actions";
+import { Location } from "history";
 
 export const XPATH_ID_BASE = "/html/body/div";
 
@@ -27,6 +33,7 @@ export const DataContext = createContext<{
   ) => void;
   firstParent: React.ReactNode | React.ReactNode[];
   typeMap: Map<string | undefined, string>;
+  currentRoute: Location<unknown>;
 }>({
   state: {
     actions: [],
@@ -39,11 +46,14 @@ export const DataContext = createContext<{
   saveCurrentGuiState: () => {},
   firstParent: undefined,
   typeMap: new Map(),
+  currentRoute: { pathname: "/" } as Location<unknown>,
 });
 
 const Provider = ({
+  currentRoute,
   children,
 }: {
+  currentRoute: Location<unknown>;
   children?: React.ReactNode | React.ReactNode[];
 }) => {
   //custom hooks
@@ -55,6 +65,8 @@ const Provider = ({
     initialState,
     reducerKey
   );
+
+  //TODO: Think about precomputing Xpaths, meaning to run the same thing as in the hocWrapper once through the whole tree to get the count of all components.
 
   /** saves current state in global storage */
   const saveCurrentGuiState = useCallback(
@@ -79,7 +91,7 @@ const Provider = ({
   );
 
   //get type map for all functional components inside application
-  const x = getFunctionalComponentTypes(children);
+  const x = getFunctionalComponentTypes({ children: children });
   const typeMap: Map<string | undefined, string> = getTypeMap(x);
 
   return (
@@ -91,6 +103,7 @@ const Provider = ({
           saveCurrentGuiState,
           firstParent: children,
           typeMap: typeMap,
+          currentRoute,
         }}
       >
         <StartWalkthroughButton />
@@ -102,9 +115,15 @@ const Provider = ({
   );
 };
 
-export const CustomButton = () => {
+export const CustomButton = ({ exampleProp }: { exampleProp: string }) => {
+  return <CustomLayer exampleProp={exampleProp} />;
+};
+
+export const CustomLayer = ({ exampleProp }: { exampleProp: string }) => {
   const [color, setColor] = useState("red");
   const [width, setWidth] = useState("300px");
+
+  const { state } = useContext(DataContext);
 
   return (
     <button
@@ -122,14 +141,18 @@ export const CustomButton = () => {
 
 /** Buttons for starting and ending a walkthrough and to print the collected data. They can be moved with the buttons provided, in case that they cover any relevant GUI elements. */
 export const StartWalkthroughButton = () => {
-  const { state, firstParent, saveCurrentGuiState, typeMap, dispatch } =
-    useContext(DataContext);
+  const {
+    state,
+    firstParent,
+    saveCurrentGuiState,
+    typeMap,
+    dispatch,
+    currentRoute,
+  } = useContext(DataContext);
 
   //custom hooks
   const { getCurrentGuiState } = useSubTree();
   const { getGuiStateId } = useGuiStateId();
-
-  const location = useLocation();
 
   const [uiButtonPlacement, setUiButtonPlacement] = useState(2);
   const [uiButtonPlacementRight, setUiButtonPlacementRight] = useState(2);
@@ -140,7 +163,7 @@ export const StartWalkthroughButton = () => {
       XPATH_ID_BASE,
       state,
       typeMap,
-      location.pathname
+      currentRoute.pathname
     );
 
     const guiStateId = await getGuiStateId(state, initialGuiState);
@@ -156,12 +179,12 @@ export const StartWalkthroughButton = () => {
           elementId: "start-walkthrough-button",
           nextState: {
             widgetArray: initialGuiState ? initialGuiState : [],
-            currentRoute: location.pathname,
+            currentRoute: currentRoute.pathname,
             stateId: guiStateId,
           },
           prevState: {
             widgetArray: initialGuiState ? initialGuiState : [],
-            currentRoute: location.pathname,
+            currentRoute: currentRoute.pathname,
             stateId: guiStateId,
           },
         },
@@ -169,14 +192,19 @@ export const StartWalkthroughButton = () => {
       },
     });
 
-    saveCurrentGuiState(initialGuiState, location.pathname, state, guiStateId);
+    saveCurrentGuiState(
+      initialGuiState,
+      currentRoute.pathname,
+      state,
+      guiStateId
+    );
   }, [
     firstParent,
     getCurrentGuiState,
     saveCurrentGuiState,
     state,
     typeMap,
-    location.pathname,
+    currentRoute.pathname,
     getGuiStateId,
   ]);
 
@@ -186,7 +214,7 @@ export const StartWalkthroughButton = () => {
       XPATH_ID_BASE,
       state,
       typeMap,
-      location.pathname
+      currentRoute.pathname
     );
 
     const guiStateId = await getGuiStateId(state, finalGuiState);
@@ -206,12 +234,12 @@ export const StartWalkthroughButton = () => {
           elementId: "end-walkthrough-button",
           nextState: {
             widgetArray: finalGuiState ? finalGuiState : [],
-            currentRoute: location.pathname,
+            currentRoute: currentRoute.pathname,
             stateId: guiStateId,
           },
           prevState: {
             widgetArray: finalGuiState ? finalGuiState : [],
-            currentRoute: location.pathname,
+            currentRoute: currentRoute.pathname,
             stateId: guiStateId,
           },
         },
@@ -219,14 +247,19 @@ export const StartWalkthroughButton = () => {
       },
     });
 
-    saveCurrentGuiState(finalGuiState, location.pathname, state, guiStateId);
+    saveCurrentGuiState(
+      finalGuiState,
+      currentRoute.pathname,
+      state,
+      guiStateId
+    );
   }, [
     firstParent,
     getCurrentGuiState,
     saveCurrentGuiState,
     state,
     typeMap,
-    location.pathname,
+    currentRoute.pathname,
     getGuiStateId,
   ]);
 

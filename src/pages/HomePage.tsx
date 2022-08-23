@@ -1,12 +1,18 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { CustomButton } from "../components/Provider/Provider";
+import ComponentTest from "../components/ComponentTest";
 
 export const HomePage = () => {
   return (
     <div>
       <div>this is the home page</div>
       <div>a second div</div>
+      <div>
+        <ComponentTest>
+          <button>hello this is inside a component</button>
+        </ComponentTest>
+      </div>
       <div>
         <div>and fourth</div>
         <input />
@@ -16,7 +22,7 @@ export const HomePage = () => {
       <div>
         <div>and second nested div</div>
       </div>
-      <CustomButton />
+      <CustomButton exampleProp={"hi"} />
 
       <Link to={"/project"}>
         <p>hi</p>

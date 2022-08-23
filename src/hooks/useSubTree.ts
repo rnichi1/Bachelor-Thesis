@@ -1,10 +1,18 @@
 import * as React from "react";
-import { createElement, ReactNode, useCallback, useMemo } from "react";
+import {
+  cloneElement,
+  createElement,
+  ReactNode,
+  useCallback,
+  useMemo,
+} from "react";
 
 import { HocWrapper } from "../components/Provider/hocWrapper";
 import { Widget } from "../types/guiState";
 import { ActionType, ReducerState } from "../types/reducerTypes";
 import { useXpath } from "./useXpath";
+import { clone } from "lodash";
+import { type } from "os";
 
 /** Custom React Hook with getSubTree function, which is used to add a higher order component to each valid component and element in the react ui tree.
  */
@@ -30,6 +38,8 @@ export const useSubTree = () => {
       let componentIndexMap = getXpathIndexMap(children, typeMap);
       //keep track of count of already found html element types to write correct index in id
       let currentIndexMap = new Map();
+
+      const typesMap = new Map();
 
       return React.Children.map(children, (element: React.ReactNode, i) => {
         //Check if element is an element that React can render
@@ -70,6 +80,72 @@ export const useSubTree = () => {
             xpathComponentId,
             typeMap,
             hasLink,
+            typesMap,
+          },
+          element
+        );
+
+        return wrappedElement;
+      });
+    },
+    [getXpathIndexMap, getXpathId]
+  );
+
+  const getTypeMap = useCallback(
+    (
+      children: React.ReactNode | React.ReactNode[],
+      dispatch: React.Dispatch<ActionType>,
+      xpathId: string,
+      typeMap: Map<string | undefined, string>,
+      hasLink?: boolean
+    ): React.ReactNode | React.ReactNode[] => {
+      /** occurrence of specific html elements inside children array (e.g. how many div elements are in the children array, how many input element, etc.) to know if brackets are needed, if it is 1 or less, the brackets are omitted in xPath. */
+      let componentIndexMap = getXpathIndexMap(children, typeMap);
+      //keep track of count of already found html element types to write correct index in id
+      let currentIndexMap = new Map();
+
+      const typesMap = new Map();
+
+      return React.Children.map(children, (element: React.ReactNode, i) => {
+        //Check if element is an element that React can render
+        if (!React.isValidElement(element)) return element;
+
+        //destructure element properties
+        const { props } = element;
+
+        const xpathComponentId = getXpathId(
+          element,
+          xpathId,
+          componentIndexMap,
+          currentIndexMap,
+          typeMap
+        );
+
+        //skip links, as they do not work with the HocWrapper, and add to id that there is a link on the children
+        if (
+          (element.type as unknown as { displayName: string }).displayName ===
+            "Link" ||
+          (element.type as unknown as { displayName: string }).displayName ===
+            "NavLink"
+        ) {
+          return React.cloneElement(
+            element,
+            { ...props },
+            getSubTree(props.children, dispatch, xpathId + "/a", typeMap, true)
+          );
+        }
+
+        /** wrapped element in higher order component to add needed properties to it and call getSubTree function recursively */
+        const wrappedElement = createElement(
+          HocWrapper as any,
+          {
+            ...props,
+            xpathId: xpathId,
+            loopIndex: i,
+            xpathComponentId,
+            typeMap,
+            hasLink,
+            typesMap,
           },
           element
         );
@@ -194,9 +270,11 @@ export const useSubTree = () => {
     [getXpathIndexMap, getXpathId]
   );
 
-  /** creates a nested array with objects, which contain the type of each functional component inside the app to be able to create xpath id's */
+  /** creates a nested array with objects, which contain the type of each functional component inside the app to be able to create xpath id's. Important to note is that
+   * functional components don't have a children object if it is not specifically defined in the props, thus the functional parameter is used to find nested functional components' type recursively.
+   * */
   const getFunctionalComponentTypes = useCallback(
-    (children: ReactNode[] | ReactNode) => {
+    ({ children }: { children?: ReactNode[] | ReactNode }) => {
       return React.Children.map(children, (element: React.ReactNode, i) => {
         if (!React.isValidElement(element)) return;
 
@@ -217,19 +295,31 @@ export const useSubTree = () => {
           element_children = props.children;
         }
 
-        const childrenTypes: any =
-          getFunctionalComponentTypes(element_children);
+        if (
+          typeof type === "function" &&
+          !element_children &&
+          !((type as Function).name === "Route") &&
+          !((type as Function).name === "Switch") &&
+          !((type as Function).name === "Redirect")
+        ) {
+          element_children = [
+            recursivelyInstantiateFunctionalComponent(element),
+          ];
+        }
+
+        let childrenTypes: any = getFunctionalComponentTypes({
+          children: element_children,
+        });
 
         if (typeof type === "function") {
           if (
             !((type as Function).name === "Route") &&
             !((type as Function).name === "Switch") &&
-            !((type as Function).name === "Redirect") &&
             !((type as Function).name === "Redirect")
           ) {
             return {
               name: (type as Function).name,
-              type: (type as Function)().type,
+              type: element_children[0]?.type,
               childrenTypes: childrenTypes,
             };
           }
@@ -240,7 +330,44 @@ export const useSubTree = () => {
     []
   );
 
+  const recursivelyInstantiateFunctionalComponent: (
+    functional: any
+  ) => React.ReactNode | React.ReactNode[] = useCallback((functional: any) => {
+    if (!React.isValidElement(functional)) return;
+
+    const { type, props } = functional;
+
+    if (!type || !(type as Function)(props)) {
+      console.log(
+        "for fuctional var",
+        functional,
+        "and type",
+        type,
+        " the functiona was undefined when instantiated"
+      );
+      return undefined;
+    }
+
+    if (typeof (type as Function)(props).type === "function") {
+      return recursivelyInstantiateFunctionalComponent(
+        (type as Function)(props)
+      );
+    } else {
+      return (type as Function)(props);
+    }
+  }, []);
+
   return useMemo(() => {
-    return { getSubTree, getCurrentGuiState, getFunctionalComponentTypes };
-  }, [getSubTree, getCurrentGuiState, getFunctionalComponentTypes]);
+    return {
+      getSubTree,
+      getCurrentGuiState,
+      getFunctionalComponentTypes,
+      recursivelyInstantiateFunctionalComponent,
+    };
+  }, [
+    getSubTree,
+    getCurrentGuiState,
+    getFunctionalComponentTypes,
+    recursivelyInstantiateFunctionalComponent,
+  ]);
 };

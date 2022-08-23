@@ -4,8 +4,9 @@ import { ReducerActionEnum } from "../../reducer/reducer";
 import { PossibleAction } from "../../types/actions";
 import { DataContext, XPATH_ID_BASE } from "./Provider";
 import { useSubTree } from "../../hooks/useSubTree";
-import { useLocation } from "react-router-dom";
 import { useGuiStateId } from "../../hooks/useGuiStateId";
+import ReactDOM from "react-dom";
+import { types } from "util";
 
 /** This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
  * @param children wrapped component.
@@ -21,12 +22,14 @@ export const HocWrapper = ({
   xpathComponentId,
   typeMap,
   hasLink,
+  typesMap,
 }: {
   children: React.ReactElement;
   xpathId: string;
   xpathComponentId: string;
   typeMap: Map<string | undefined, string>;
   hasLink?: boolean;
+  typesMap: Map<string, number>;
 }) => {
   /* This id could be used instead of the xpath ids. useId creates an Id with the react-tree as well and could be used as a native, react specific implementation of id, but due to
    changes in the react API in the future, this could break quite easily as it is not necessarily provided to be used as an ID in the way this library employs it.
@@ -36,33 +39,58 @@ export const HocWrapper = ({
   */
 
   //Hook for getting and setting persistent state
-  const { dispatch, saveCurrentGuiState, firstParent, state } =
+  const { dispatch, saveCurrentGuiState, firstParent, state, currentRoute } =
     useContext(DataContext);
 
   //custom hooks
-  const { getSubTree, getCurrentGuiState } = useSubTree();
+  const {
+    getSubTree,
+    getCurrentGuiState,
+    recursivelyInstantiateFunctionalComponent,
+  } = useSubTree();
   const { getGuiStateId } = useGuiStateId();
-
-  //get current route
-  const location = useLocation();
 
   //create ref for element
   const ref: React.MutableRefObject<HTMLElement> = useRef<any>();
 
-  const { type } = children;
+  const { type, props } = children;
 
   let childElement: React.ReactNode;
 
-  if (typeof type === "function") {
+  console.log(ReactDOM.findDOMNode(ref.current));
+  if (ref.current) {
+    if (
+      typesMap &&
+      typesMap.has((ReactDOM.findDOMNode(ref.current) as any).localName)
+    ) {
+      typesMap.set(
+        (ReactDOM.findDOMNode(ref.current) as any).localName,
+        typesMap.get((ReactDOM.findDOMNode(ref.current) as any).localName)! + 1
+      );
+    } else {
+      typesMap.set((ReactDOM.findDOMNode(ref.current) as any).localName, 1);
+    }
+  }
+  //TODO: implement this as a fake xpath with [1] even if theres only one element.
+  console.log(typesMap);
+
+  if (typeof type === "function" && !props.children) {
     //check that it is not a React Router specific component
     if (
       !((type as Function).name === "Route") &&
       !((type as Function).name === "Switch") &&
       !((type as Function).name === "Redirect")
     ) {
-      childElement = clone((type as Function)(), xpathComponentId);
+      // deep instantiate functional components
+      const instantiatedFc =
+        recursivelyInstantiateFunctionalComponent(children);
+      // Check if instantiated functional component is an element that React can render
+      if (!React.isValidElement(instantiatedFc)) {
+        childElement = instantiatedFc;
+      } else {
+        childElement = clone(instantiatedFc, xpathComponentId);
+      }
     } else {
-      xpathComponentId = xpathId;
       childElement = clone(children, xpathComponentId);
     }
   } else {
@@ -110,7 +138,7 @@ export const HocWrapper = ({
         XPATH_ID_BASE,
         state,
         typeMap,
-        location.pathname
+        currentRoute.pathname
       );
 
       // call the old onClick function, such that no original functionality gets lost.
@@ -122,7 +150,7 @@ export const HocWrapper = ({
         XPATH_ID_BASE,
         state,
         typeMap,
-        location.pathname
+        currentRoute.pathname
       );
 
       // compute GUI state id of previous state
@@ -146,12 +174,12 @@ export const HocWrapper = ({
             elementId: xpathComponentId,
             nextState: {
               widgetArray: currentGuiState ? currentGuiState : [],
-              currentRoute: location.pathname,
+              currentRoute: currentRoute.pathname,
               stateId: currentGuiStateID,
             },
             prevState: {
               widgetArray: prevGuiState ? prevGuiState : [],
-              currentRoute: location.pathname,
+              currentRoute: currentRoute.pathname,
               stateId: prevGuiStateID,
             },
           },
@@ -162,7 +190,7 @@ export const HocWrapper = ({
       // save the current gui state in the global storage
       saveCurrentGuiState(
         currentGuiState,
-        location.pathname,
+        currentRoute.pathname,
         state,
         currentGuiStateID
       );
@@ -175,9 +203,9 @@ export const HocWrapper = ({
     //check for routes
     if ((element.type as Function).name === "Route") {
       if (element.props.component) {
-        element_children = props.component().props.children;
+        element_children = props.component();
       } else if (element.props.render) {
-        element_children = props.render().props.children;
+        element_children = props.render();
       } else {
         element_children = props.children;
       }

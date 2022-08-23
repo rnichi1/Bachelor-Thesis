@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useCallback, useMemo } from "react";
+import { useSubTree } from "./useSubTree";
 
 export const useXpath = () => {
   /** computes occurrence counters of specific html elements inside the children */
@@ -65,6 +66,10 @@ export const useXpath = () => {
         } else {
           return parentXpathId;
         }
+      }
+
+      if (typeof type === "symbol") {
+        return parentXpathId;
       }
 
       if (fcChildrenType) {
