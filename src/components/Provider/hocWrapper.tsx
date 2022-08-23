@@ -57,23 +57,6 @@ export const HocWrapper = ({
 
   let childElement: React.ReactNode;
 
-  console.log(ReactDOM.findDOMNode(ref.current));
-  if (ref.current) {
-    if (
-      typesMap &&
-      typesMap.has((ReactDOM.findDOMNode(ref.current) as any).localName)
-    ) {
-      typesMap.set(
-        (ReactDOM.findDOMNode(ref.current) as any).localName,
-        typesMap.get((ReactDOM.findDOMNode(ref.current) as any).localName)! + 1
-      );
-    } else {
-      typesMap.set((ReactDOM.findDOMNode(ref.current) as any).localName, 1);
-    }
-  }
-  //TODO: implement this as a fake xpath with [1] even if theres only one element.
-  console.log(typesMap);
-
   if (typeof type === "function" && !props.children) {
     //check that it is not a React Router specific component
     if (
