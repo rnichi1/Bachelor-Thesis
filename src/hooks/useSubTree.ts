@@ -1,18 +1,10 @@
 import * as React from "react";
-import {
-  cloneElement,
-  createElement,
-  ReactNode,
-  useCallback,
-  useMemo,
-} from "react";
+import { createElement, ReactNode, useCallback, useMemo } from "react";
 
 import { HocWrapper } from "../components/Provider/hocWrapper";
 import { Widget } from "../types/guiState";
 import { ActionType, ReducerState } from "../types/reducerTypes";
 import { useXpath } from "./useXpath";
-import { clone } from "lodash";
-import { type } from "os";
 
 /** Custom React Hook with getSubTree function, which is used to add a higher order component to each valid component and element in the react ui tree.
  */
@@ -40,6 +32,11 @@ export const useSubTree = () => {
       let currentIndexMap = new Map();
 
       const typesMap = new Map();
+
+      // avoid things like contexts, since they can't be used with Children.map
+      if (typeof children === "function") {
+        return children;
+      }
 
       return React.Children.map(children, (element: React.ReactNode, i) => {
         //Check if element is an element that React can render
@@ -69,7 +66,6 @@ export const useSubTree = () => {
             getSubTree(props.children, dispatch, xpathId + "/a", typeMap, true)
           );
         }
-
         /** wrapped element in higher order component to add needed properties to it and call getSubTree function recursively */
         const wrappedElement = createElement(
           HocWrapper as any,
@@ -162,6 +158,12 @@ export const useSubTree = () => {
 
         // get the reference from the global storage
         const ref = state.refs.get(xpathComponentId);
+
+        console.log(
+          state.refs.get(xpathComponentId),
+          xpathComponentId,
+          state.refs
+        );
 
         /** bounding rect object of referenced element. Provides info on positioning and shape of element */
         let boundingRect;
@@ -272,13 +274,24 @@ export const useSubTree = () => {
 
     const { type, props } = functional;
 
+    /* console.log((type as Function)(props).type);
+
+    const { props: subProps } = (type as Function)(props);
+
+    if (
+      typeof !(type as Function)(props).type === "object" &&
+      !(type as Function)(props).type(subProps).type
+    ) {
+      return undefined;
+    }*/
+
     if (!type || !(type as Function)(props)) {
       console.log(
         "for fuctional var",
         functional,
         "and type",
         type,
-        " the functiona was undefined when instantiated"
+        " the functional was undefined when instantiated"
       );
       return undefined;
     }

@@ -67,10 +67,14 @@ export const HocWrapper = ({
       // deep instantiate functional components
       const instantiatedFc =
         recursivelyInstantiateFunctionalComponent(children);
+
       // Check if instantiated functional component is an element that React can render
-      if (!React.isValidElement(instantiatedFc)) {
-        childElement = instantiatedFc;
+      if (!React.isValidElement(instantiatedFc) || !instantiatedFc) {
+        childElement = null;
       } else {
+        if (typeof instantiatedFc === "object") {
+          xpathComponentId = xpathId;
+        }
         childElement = clone(instantiatedFc, xpathComponentId);
       }
     } else {
@@ -79,6 +83,16 @@ export const HocWrapper = ({
   } else {
     childElement = clone(children, xpathComponentId);
   }
+
+  /*console.log(ReactDOM.findDOMNode(ref.current) as any);
+  //TODO: use this for xpath + simple id for refs in state
+  if (ref.current) {
+    Object.values(
+      (ReactDOM.findDOMNode(ref.current) as any).parentNode.children
+    ).map((child: any) => {
+      console.log(child.localName);
+    });
+  }*/
 
   // save reference to dom element in global storage
   useEffect(() => {

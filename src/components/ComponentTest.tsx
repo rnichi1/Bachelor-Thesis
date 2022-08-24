@@ -13,7 +13,7 @@ class ComponentTest extends React.Component {
   }
 }
 
-class ComponentInternal extends React.Component {
+export class ComponentInternal extends React.Component {
   constructor(props: {}) {
     super(props);
   }

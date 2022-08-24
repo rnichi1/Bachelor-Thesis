@@ -2,6 +2,7 @@ import * as React from "react";
 import { Link } from "react-router-dom";
 import { CustomButton } from "../components/Provider/Provider";
 import ComponentTest from "../components/ComponentTest";
+import { FaInbox } from "react-icons/fa";
 
 export const HomePage = () => {
   return (
@@ -20,6 +21,7 @@ export const HomePage = () => {
         <input />
       </div>
       <div>
+        <FaInbox />
         <div>and second nested div</div>
       </div>
       <CustomButton exampleProp={"hi"} />
