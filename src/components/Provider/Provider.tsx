@@ -1,4 +1,10 @@
-import React, { createContext, useCallback, useContext, useState } from "react";
+import React, {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useState,
+} from "react";
 import { useSubTree } from "../../hooks/useSubTree";
 import {
   initialState,
@@ -8,10 +14,11 @@ import {
 import { usePersistedReducer } from "../../hooks/usePersistedReducer";
 import { ActionType, ReducerState } from "../../types/reducerTypes";
 import { Widget } from "../../types/guiState";
-import { getTypeMap } from "../../helpers/typeMap";
+import { getTypeMap, TypeMapValueType } from "../../helpers/typeMap";
 import { useGuiStateId } from "../../hooks/useGuiStateId";
 import { PossibleAction } from "../../types/actions";
 import { Location } from "history";
+import { type } from "os";
 
 export const XPATH_ID_BASE = "/html/body/div";
 
@@ -26,7 +33,7 @@ export const DataContext = createContext<{
     guiStateId: number
   ) => void;
   firstParent: React.ReactNode | React.ReactNode[];
-  typeMap: Map<string | undefined, string>;
+  typeMap: Map<string | undefined, TypeMapValueType>;
   currentRoute: Location<unknown>;
 }>({
   state: {
@@ -85,8 +92,14 @@ const Provider = ({
   );
 
   //get type map for all functional components inside application
-  const x = getFunctionalComponentTypes({ children: children });
-  const typeMap: Map<string | undefined, string> = getTypeMap(x);
+  const functionalComponentTypes = getFunctionalComponentTypes({
+    children: children,
+  });
+  console.log(functionalComponentTypes);
+  const typeMap: Map<string | undefined, TypeMapValueType> = getTypeMap(
+    functionalComponentTypes
+  );
+  console.log("typemap", typeMap);
 
   return (
     <>

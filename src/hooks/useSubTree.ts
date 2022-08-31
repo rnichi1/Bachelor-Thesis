@@ -1,10 +1,17 @@
 import * as React from "react";
-import { createElement, ReactNode, useCallback, useMemo } from "react";
+import {
+  createElement,
+  isValidElement,
+  ReactNode,
+  useCallback,
+  useMemo,
+} from "react";
 
 import { HocWrapper } from "../components/Provider/hocWrapper";
 import { Widget } from "../types/guiState";
 import { ActionType, ReducerState } from "../types/reducerTypes";
 import { useXpath } from "./useXpath";
+import { TypeMapValueType } from "../helpers/typeMap";
 
 /** Custom React Hook with getSubTree function, which is used to add a higher order component to each valid component and element in the react ui tree.
  */
@@ -23,7 +30,7 @@ export const useSubTree = () => {
       children: React.ReactNode | React.ReactNode[],
       dispatch: React.Dispatch<ActionType>,
       xpathId: string,
-      typeMap: Map<string | undefined, string>,
+      typeMap: Map<string | undefined, TypeMapValueType>,
       hasLink?: boolean
     ): React.ReactNode | React.ReactNode[] => {
       /** occurrence of specific html elements inside children array (e.g. how many div elements are in the children array, how many input element, etc.) to know if brackets are needed, if it is 1 or less, the brackets are omitted in xPath. */
@@ -131,7 +138,7 @@ export const useSubTree = () => {
       children: ReactNode[] | ReactNode,
       xpathId: string,
       state: ReducerState,
-      typeMap: Map<string | undefined, string>,
+      typeMap: Map<string | undefined, TypeMapValueType>,
       route?: string
     ) => {
       /** occurrence of specific html elements inside children array (e.g. how many div elements are in the children array, how many input element, etc.) to know if brackets are needed, if it is 1 or less, the brackets are omitted in xPath. */
@@ -155,8 +162,6 @@ export const useSubTree = () => {
           typeMap
         );
 
-        console.log(xpathComponentId, "looking at component", element);
-
         let element_children: ReactNode | ReactNode[];
 
         let currentRoute;
@@ -168,9 +173,17 @@ export const useSubTree = () => {
           !((type as Function).name === "Switch") &&
           !((type as Function).name === "Redirect")
         ) {
-          element_children = [
-            recursivelyInstantiateFunctionalComponent(element),
-          ];
+          const instantiatedElement = typeMap.get((type as Function).name)
+            ?.children[0];
+          if (isValidElement(instantiatedElement)) {
+            element_children = instantiatedElement.props.children;
+            console.log("ELEMENT CHILDREN", element_children);
+          } else {
+            console.log(
+              "ELEMENT CHILDREN NOT FOUND",
+              typeMap.get((type as Function).name)
+            );
+          }
         } else if ((type as Function).name === "Route") {
           if (props.path !== route) return;
           currentRoute = props.path;
@@ -307,6 +320,7 @@ export const useSubTree = () => {
               name: (type as Function).name,
               type: element_children[0]?.type,
               childrenTypes: childrenTypes,
+              children: element_children,
             };
           }
         }

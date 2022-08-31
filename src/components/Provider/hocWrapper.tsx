@@ -5,6 +5,7 @@ import { PossibleAction } from "../../types/actions";
 import { DataContext, XPATH_ID_BASE } from "./Provider";
 import { useSubTree } from "../../hooks/useSubTree";
 import { useGuiStateId } from "../../hooks/useGuiStateId";
+import { TypeMapValueType } from "../../helpers/typeMap";
 
 /** This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
  * @param children wrapped component.
@@ -25,7 +26,7 @@ export const HocWrapper = ({
   children: React.ReactElement;
   xpathId: string;
   xpathComponentId: string;
-  typeMap: Map<string | undefined, string>;
+  typeMap: Map<string | undefined, TypeMapValueType>;
   hasLink?: boolean;
   typesMap: Map<string, number>;
 }) => {
