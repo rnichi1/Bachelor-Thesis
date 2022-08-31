@@ -15,7 +15,6 @@ export const useGuiStateId = () => {
       let id = state.guiStates.length + 1;
 
       state.guiStates.forEach((s) => {
-        console.log(s.widgetArray, widgetArray);
         if (isEqual(widgetArray, s.widgetArray)) {
           console.log(
             "state already exists",

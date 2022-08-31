@@ -87,6 +87,44 @@ export const useSubTree = () => {
     [getXpathIndexMap, getXpathId]
   );
 
+  const recursivelyInstantiateFunctionalComponent: (
+    functional: any
+  ) => React.ReactNode | React.ReactNode[] = useCallback((functional: any) => {
+    if (!React.isValidElement(functional)) return;
+
+    const { type, props } = functional;
+
+    /* console.log((type as Function)(props).type);
+
+    const { props: subProps } = (type as Function)(props);
+
+    if (
+      typeof !(type as Function)(props).type === "object" &&
+      !(type as Function)(props).type(subProps).type
+    ) {
+      return undefined;
+    }*/
+
+    if (!type || !(type as Function)(props)) {
+      console.log(
+        "for fuctional var",
+        functional,
+        "and type",
+        type,
+        " the functional was undefined when instantiated"
+      );
+      return undefined;
+    }
+
+    if (typeof (type as Function)(props).type === "function") {
+      return recursivelyInstantiateFunctionalComponent(
+        (type as Function)(props)
+      );
+    } else {
+      return (type as Function)(props);
+    }
+  }, []);
+
   /** computes current gui state */
   const getCurrentGuiState = useCallback(
     (
@@ -117,12 +155,23 @@ export const useSubTree = () => {
           typeMap
         );
 
-        let element_children = [];
+        console.log(xpathComponentId, "looking at component", element);
+
+        let element_children: ReactNode | ReactNode[];
 
         let currentRoute;
 
-        //check for routes
-        if ((type as Function).name === "Route") {
+        if (
+          typeof type === "function" &&
+          !element_children &&
+          !((type as Function).name === "Route") &&
+          !((type as Function).name === "Switch") &&
+          !((type as Function).name === "Redirect")
+        ) {
+          element_children = [
+            recursivelyInstantiateFunctionalComponent(element),
+          ];
+        } else if ((type as Function).name === "Route") {
           if (props.path !== route) return;
           currentRoute = props.path;
           if (element.props.component) {
@@ -135,6 +184,8 @@ export const useSubTree = () => {
         } else {
           element_children = props.children;
         }
+
+        console.log(element_children, "are the children found");
         /** recursively computed widget tree */
         let computedChildrenArray;
 
@@ -155,15 +206,13 @@ export const useSubTree = () => {
           typeMap,
           currentRoute ? currentRoute : route
         );
+        console.log(
+          computedChildrenArray,
+          "are the children computed as sub gui state"
+        );
 
         // get the reference from the global storage
         const ref = state.refs.get(xpathComponentId);
-
-        console.log(
-          state.refs.get(xpathComponentId),
-          xpathComponentId,
-          state.refs
-        );
 
         /** bounding rect object of referenced element. Provides info on positioning and shape of element */
         let boundingRect;
@@ -264,46 +313,8 @@ export const useSubTree = () => {
         return { childrenTypes: childrenTypes };
       });
     },
-    []
+    [recursivelyInstantiateFunctionalComponent]
   );
-
-  const recursivelyInstantiateFunctionalComponent: (
-    functional: any
-  ) => React.ReactNode | React.ReactNode[] = useCallback((functional: any) => {
-    if (!React.isValidElement(functional)) return;
-
-    const { type, props } = functional;
-
-    /* console.log((type as Function)(props).type);
-
-    const { props: subProps } = (type as Function)(props);
-
-    if (
-      typeof !(type as Function)(props).type === "object" &&
-      !(type as Function)(props).type(subProps).type
-    ) {
-      return undefined;
-    }*/
-
-    if (!type || !(type as Function)(props)) {
-      console.log(
-        "for fuctional var",
-        functional,
-        "and type",
-        type,
-        " the functional was undefined when instantiated"
-      );
-      return undefined;
-    }
-
-    if (typeof (type as Function)(props).type === "function") {
-      return recursivelyInstantiateFunctionalComponent(
-        (type as Function)(props)
-      );
-    } else {
-      return (type as Function)(props);
-    }
-  }, []);
 
   return useMemo(() => {
     return {

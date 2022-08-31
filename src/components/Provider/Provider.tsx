@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  forwardRef,
-  useCallback,
-  useContext,
-  useState,
-} from "react";
+import React, { createContext, useCallback, useContext, useState } from "react";
 import { useSubTree } from "../../hooks/useSubTree";
 import {
   initialState,
@@ -123,8 +117,6 @@ export const CustomLayer = ({ exampleProp }: { exampleProp: string }) => {
   const [color, setColor] = useState("red");
   const [width, setWidth] = useState("300px");
 
-  const { state } = useContext(DataContext);
-
   return (
     <button
       style={{ height: "200px", color: color, width: width }}
@@ -160,11 +152,13 @@ export const StartWalkthroughButton = () => {
   const startWalkthrough = useCallback(async () => {
     const initialGuiState = await getCurrentGuiState(
       firstParent,
-      XPATH_ID_BASE,
+      XPATH_ID_BASE + "/div",
       state,
       typeMap,
       currentRoute.pathname
     );
+
+    console.log(initialGuiState);
 
     const guiStateId = await getGuiStateId(state, initialGuiState);
 

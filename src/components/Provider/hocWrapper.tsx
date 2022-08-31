@@ -5,8 +5,6 @@ import { PossibleAction } from "../../types/actions";
 import { DataContext, XPATH_ID_BASE } from "./Provider";
 import { useSubTree } from "../../hooks/useSubTree";
 import { useGuiStateId } from "../../hooks/useGuiStateId";
-import ReactDOM from "react-dom";
-import { types } from "util";
 
 /** This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
  * @param children wrapped component.
@@ -72,9 +70,6 @@ export const HocWrapper = ({
       if (!React.isValidElement(instantiatedFc) || !instantiatedFc) {
         childElement = null;
       } else {
-        if (typeof instantiatedFc === "object") {
-          xpathComponentId = xpathId;
-        }
         childElement = clone(instantiatedFc, xpathComponentId);
       }
     } else {
@@ -132,11 +127,12 @@ export const HocWrapper = ({
       // await the recording of the GUI state before any changes are made by the original click functionality.
       const prevGuiState = await getCurrentGuiState(
         firstParent,
-        XPATH_ID_BASE,
+        XPATH_ID_BASE + "/div",
         state,
         typeMap,
         currentRoute.pathname
       );
+      console.log(prevGuiState);
 
       // call the old onClick function, such that no original functionality gets lost.
       props.onClick && (await props.onClick());
@@ -144,11 +140,13 @@ export const HocWrapper = ({
       // get the GUI state after the click functionality has been executed.
       const currentGuiState = await getCurrentGuiState(
         firstParent,
-        XPATH_ID_BASE,
+        XPATH_ID_BASE + "/div",
         state,
         typeMap,
         currentRoute.pathname
       );
+
+      console.log(xpathComponentId);
 
       // compute GUI state id of previous state
       const prevGuiStateID = await getGuiStateId(state, prevGuiState);

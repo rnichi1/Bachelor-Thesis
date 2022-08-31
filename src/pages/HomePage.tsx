@@ -9,11 +9,7 @@ export const HomePage = () => {
     <div>
       <div>this is the home page</div>
       <div>a second div</div>
-      <div>
-        <ComponentTest>
-          <button>hello this is inside a component</button>
-        </ComponentTest>
-      </div>
+      <div></div>
       <div>
         <div>and fourth</div>
         <input />
