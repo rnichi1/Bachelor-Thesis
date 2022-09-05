@@ -7,15 +7,15 @@ import { isEqual } from "lodash";
 export const useGuiStateId = () => {
   /** Function that either fetches the existing id for existing states or creates a new one. */
   const getGuiStateId = useCallback(
-    (state: ReducerState, widgetArray: Widget[] | null | undefined) => {
-      if (!widgetArray) {
+    (state: ReducerState, widget: Widget | undefined) => {
+      if (!widget) {
         return -1;
       }
 
       let id = state.guiStates.length + 1;
 
       state.guiStates.forEach((s) => {
-        if (isEqual(widgetArray, s.widgetArray)) {
+        if (isEqual(widget, s.widgets)) {
           console.log(
             "state already exists",
             s,
@@ -30,7 +30,7 @@ export const useGuiStateId = () => {
       if (id === state.guiStates.length + 1) {
         console.log(
           "state does not exist yet ",
-          widgetArray,
+          widget,
           " this new state was recorded with id ",
           state.guiStates.length + 1
         );

@@ -10,12 +10,12 @@ import { SecondaryPage } from "./pages/SecondaryPage";
 export const Routes = () => {
   const location = useLocation();
   return (
-    <Provider currentRoute={location}>
-      <Switch>
-        <Redirect exact from="/" to="/home" />
+    <Switch>
+      <Redirect exact from="/" to="/home" />
+      <Provider currentRoute={location} firstXpathId={"/html/body/div/div"}>
         <Route path="/home" component={HomePage} />
         <Route path="/project" component={SecondaryPage} />
-      </Switch>
-    </Provider>
+      </Provider>
+    </Switch>
   );
 };

@@ -1,5 +1,5 @@
 export type GuiState = {
-  widgetArray: Widget[];
+  widgets: Widget | undefined;
   currentRoute: string;
   stateId: number;
 };
@@ -15,7 +15,7 @@ export type GuiState = {
  * @param children all widgets that are wrapped by this widget in the JSX tree.
  */
 export type Widget = {
-  id: string;
+  id: string | null;
   route: string;
   boundingWidth: number;
   boundingHeight: number;

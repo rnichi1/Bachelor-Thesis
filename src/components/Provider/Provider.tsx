@@ -3,6 +3,7 @@ import React, {
   ReactNode,
   useCallback,
   useContext,
+  useReducer,
   useState,
 } from "react";
 import { useSubTree } from "../../hooks/useSubTree";
@@ -13,7 +14,7 @@ import {
 } from "../../reducer/reducer";
 import { usePersistedReducer } from "../../hooks/usePersistedReducer";
 import { ActionType, ReducerState } from "../../types/reducerTypes";
-import { Widget } from "../../types/guiState";
+import { GuiState, Widget } from "../../types/guiState";
 import { getTypeMap, TypeMapValueType } from "../../helpers/typeMap";
 import { useGuiStateId } from "../../hooks/useGuiStateId";
 import { PossibleAction } from "../../types/actions";
@@ -26,15 +27,10 @@ export const XPATH_ID_BASE = "/html/body/div";
 export const DataContext = createContext<{
   state: ReducerState;
   dispatch: React.Dispatch<ActionType>;
-  saveCurrentGuiState: (
-    currentGuiState: Widget[] | null | undefined,
-    currentRoute: string,
-    state: ReducerState,
-    guiStateId: number
-  ) => void;
   firstParent: React.ReactNode | React.ReactNode[];
   typeMap: Map<string | undefined, TypeMapValueType>;
   currentRoute: Location<unknown>;
+  firstXpathId: string;
 }>({
   state: {
     actions: [],
@@ -44,52 +40,26 @@ export const DataContext = createContext<{
     walkthroughActive: false,
   },
   dispatch: () => {},
-  saveCurrentGuiState: () => {},
   firstParent: undefined,
   typeMap: new Map(),
   currentRoute: { pathname: "/" } as Location<unknown>,
+  firstXpathId: "",
 });
 
 const Provider = ({
   currentRoute,
   children,
+  firstXpathId,
 }: {
   currentRoute: Location<unknown>;
+  firstXpathId: string;
   children?: React.ReactNode | React.ReactNode[];
 }) => {
   //custom hooks
   const { getSubTree, getFunctionalComponentTypes } = useSubTree();
 
   const reducerKey = "PROVIDER_STATE";
-  const { state, dispatch } = usePersistedReducer(
-    reducer,
-    initialState,
-    reducerKey
-  );
-
-  //TODO: Think about precomputing Xpaths, meaning to run the same thing as in the hocWrapper once through the whole tree to get the count of all components.
-
-  /** saves current state in global storage */
-  const saveCurrentGuiState = useCallback(
-    (
-      currentGuiState: Widget[] | null | undefined,
-      currentRoute: string,
-      state: ReducerState,
-      guiStateId: number
-    ) => {
-      if (currentGuiState) {
-        dispatch({
-          type: ReducerActionEnum.UPDATE_GUI_STATES,
-          newGuiState: {
-            widgetArray: currentGuiState,
-            currentRoute: currentRoute,
-            stateId: guiStateId,
-          },
-        });
-      }
-    },
-    [dispatch]
-  );
+  const [state, dispatch] = useReducer(reducer, initialState);
 
   //get type map for all functional components inside application
   const functionalComponentTypes = getFunctionalComponentTypes({
@@ -106,15 +76,15 @@ const Provider = ({
         value={{
           state,
           dispatch,
-          saveCurrentGuiState,
           firstParent: children,
-          typeMap: typeMap,
+          typeMap,
           currentRoute,
+          firstXpathId,
         }}
       >
         <StartWalkthroughButton />
         {children
-          ? getSubTree(children, dispatch, XPATH_ID_BASE, typeMap)
+          ? getSubTree(children, dispatch, XPATH_ID_BASE, typeMap, firstXpathId)
           : null}
       </DataContext.Provider>
     </>
@@ -160,14 +130,8 @@ export const CustomLayer = ({ exampleProp }: { exampleProp: string }) => {
 
 /** Buttons for starting and ending a walkthrough and to print the collected data. They can be moved with the buttons provided, in case that they cover any relevant GUI elements. */
 export const StartWalkthroughButton = () => {
-  const {
-    state,
-    firstParent,
-    saveCurrentGuiState,
-    typeMap,
-    dispatch,
-    currentRoute,
-  } = useContext(DataContext);
+  const { state, firstParent, typeMap, dispatch, currentRoute, firstXpathId } =
+    useContext(DataContext);
 
   //custom hooks
   const { getCurrentGuiState } = useSubTree();
@@ -178,14 +142,10 @@ export const StartWalkthroughButton = () => {
 
   const startWalkthrough = useCallback(async () => {
     const initialGuiState = await getCurrentGuiState(
-      firstParent,
-      XPATH_ID_BASE,
+      firstXpathId,
       state,
-      typeMap,
       currentRoute.pathname
     );
-
-    const guiStateId = await getGuiStateId(state, initialGuiState);
 
     dispatch({ type: ReducerActionEnum.START_WALKTHROUGH });
 
@@ -196,31 +156,21 @@ export const StartWalkthroughButton = () => {
           actionType: PossibleAction.START_WALKTHROUGH,
           timestamp: new Date().getTime(),
           elementId: "start-walkthrough-button",
-          nextState: {
-            widgetArray: initialGuiState ? initialGuiState : [],
-            currentRoute: currentRoute.pathname,
-            stateId: guiStateId,
-          },
-          prevState: {
-            widgetArray: initialGuiState ? initialGuiState : [],
-            currentRoute: currentRoute.pathname,
-            stateId: guiStateId,
-          },
+          nextState: initialGuiState,
+          prevState: initialGuiState,
         },
         prevActionWasRouting: false,
       },
     });
 
-    saveCurrentGuiState(
-      initialGuiState,
-      currentRoute.pathname,
-      state,
-      guiStateId
-    );
+    // save the current gui state in the global storage
+    dispatch({
+      type: ReducerActionEnum.UPDATE_GUI_STATES,
+      newGuiState: initialGuiState,
+    });
   }, [
     firstParent,
     getCurrentGuiState,
-    saveCurrentGuiState,
     state,
     typeMap,
     currentRoute.pathname,
@@ -229,15 +179,12 @@ export const StartWalkthroughButton = () => {
 
   const endWalkthrough = useCallback(async () => {
     const finalGuiState = await getCurrentGuiState(
-      firstParent,
-      XPATH_ID_BASE,
+      firstXpathId,
       state,
-      typeMap,
       currentRoute.pathname
     );
 
-    const guiStateId = await getGuiStateId(state, finalGuiState);
-
+    //check if routing action needs to adjust previous state variable
     const prevActionWasRouting =
       state.actions[state.actions.length - 1] &&
       state.actions[state.actions.length - 1].actionType === "ROUTE";
@@ -251,31 +198,21 @@ export const StartWalkthroughButton = () => {
           actionType: PossibleAction.END_WALKTHROUGH,
           timestamp: new Date().getTime(),
           elementId: "end-walkthrough-button",
-          nextState: {
-            widgetArray: finalGuiState ? finalGuiState : [],
-            currentRoute: currentRoute.pathname,
-            stateId: guiStateId,
-          },
-          prevState: {
-            widgetArray: finalGuiState ? finalGuiState : [],
-            currentRoute: currentRoute.pathname,
-            stateId: guiStateId,
-          },
+          nextState: finalGuiState,
+          prevState: finalGuiState,
         },
         prevActionWasRouting: prevActionWasRouting,
       },
     });
 
-    saveCurrentGuiState(
-      finalGuiState,
-      currentRoute.pathname,
-      state,
-      guiStateId
-    );
+    // save the current gui state in the global storage
+    dispatch({
+      type: ReducerActionEnum.UPDATE_GUI_STATES,
+      newGuiState: finalGuiState,
+    });
   }, [
     firstParent,
     getCurrentGuiState,
-    saveCurrentGuiState,
     state,
     typeMap,
     currentRoute.pathname,

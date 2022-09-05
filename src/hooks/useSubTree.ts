@@ -1,26 +1,19 @@
 import * as React from "react";
-import {
-  cloneElement,
-  Component,
-  createElement,
-  isValidElement,
-  ReactNode,
-  useCallback,
-  useMemo,
-  useRef,
-} from "react";
+import { createElement, ReactNode, useCallback, useMemo } from "react";
 
 import { HocWrapper } from "../components/Provider/hocWrapper";
-import { Widget } from "../types/guiState";
+import { GuiState, Widget } from "../types/guiState";
 import { ActionType, ReducerState } from "../types/reducerTypes";
 import { useXpath } from "./useXpath";
 import { TypeMapValueType } from "../helpers/typeMap";
+import { XPATH_ID_BASE } from "../components/Provider/Provider";
+import { useGuiStateId } from "./useGuiStateId";
 
 /** Custom React Hook with getSubTree function, which is used to add a higher order component to each valid component and element in the react ui tree.
  */
 export const useSubTree = () => {
   const { getXpathId, getXpathIndexMap } = useXpath();
-  const ref = useRef();
+  const { getGuiStateId } = useGuiStateId();
 
   /**
    * returns a children subtree of any component as a React Node with custom props to collect user action data.
@@ -35,7 +28,9 @@ export const useSubTree = () => {
       dispatch: React.Dispatch<ActionType>,
       xpathId: string,
       typeMap: Map<string | undefined, TypeMapValueType>,
-      hasLink?: boolean
+      firstXpathId?: string,
+      hasLink?: boolean,
+      isRoute?: boolean
     ): React.ReactNode | React.ReactNode[] => {
       /** occurrence of specific html elements inside children array (e.g. how many div elements are in the children array, how many input element, etc.) to know if brackets are needed, if it is 1 or less, the brackets are omitted in xPath. */
       let componentIndexMap = getXpathIndexMap(children, typeMap);
@@ -62,31 +57,39 @@ export const useSubTree = () => {
           typeMap
         );
 
+        let parentId =
+          firstXpathId || xpathComponentId === XPATH_ID_BASE
+            ? firstXpathId
+            : xpathComponentId;
+
         //skip links, as they do not work with the HocWrapper, and add to id that there is a link on the children
         if (
-          (element.type as unknown as { displayName: string }).displayName ===
-            "Link" ||
-          (element.type as unknown as { displayName: string }).displayName ===
-            "NavLink"
+          (type as unknown as { displayName: string }).displayName === "Link" ||
+          (type as unknown as { displayName: string }).displayName === "NavLink"
         ) {
           return React.cloneElement(
             element,
             { ...props },
-            getSubTree(props.children, dispatch, xpathId + "/a", typeMap, true)
+            getSubTree(
+              props.children,
+              dispatch,
+              xpathId + "/a",
+              typeMap,
+              parentId,
+              true
+            )
           );
         }
+        //TODO check what type elments need to be and research why routes break
+
         /** wrapped element in higher order component to add needed properties to it and call getSubTree function recursively */
-        const wrappedElement = createElement(
-          HocWrapper as any,
-          {
-            ...props,
-            loopIndex: i,
-            xpathComponentId,
-            typeMap,
-            hasLink,
-          },
-          element
-        );
+        const wrappedElement = createElement(HocWrapper, {
+          element,
+          xpathComponentId,
+          typeMap,
+          hasLink,
+          parentId,
+        });
 
         return wrappedElement;
       });
@@ -140,173 +143,100 @@ export const useSubTree = () => {
     }
   }, []);
 
+  /** recursively looks through DOM elements, starting from a HTMLElement (provided by a ref) and gets the current GUI state */
+  const getGuiState = useCallback(
+    (ref: HTMLElement | undefined, currentRoute?: string) => {
+      if (!ref) return null;
+
+      /** bounding rect object of referenced element. Provides info on positioning and shape of element */
+      let boundingRect;
+
+      /** styles defined in css for example */
+      let styles;
+      /** styles defined in styles prop */
+      let inlineStyles;
+      let styleAsObject: any = {};
+      let inlineStyleAsObject: any = {};
+      let xpathComponentId: string | null = "";
+      let children: Widget[] = [];
+
+      if (ref && ref.localName) {
+        // get xpath id
+        xpathComponentId = ref.getAttribute("xpathid");
+
+        children = Array.from(ref.children).map((child) => {
+          return getGuiState(child as any);
+        }) as Widget[];
+
+        try {
+          boundingRect = (ref as any).getBoundingClientRect();
+        } catch (e) {
+          console.log(e, "error in getting bounding rect from component", ref);
+        }
+
+        // inline styles, defined in js, need to be handled separately, because getComputedStyle does not return them. Returns a CSSStyleDeclaration object, which updates when the styles update.
+        if (ref.style && ref.style.length > 0) {
+          inlineStyles = Object.values(ref.style);
+
+          // Add the relevant styles to an object to store
+          inlineStyles &&
+            inlineStyles.forEach((v) => {
+              inlineStyleAsObject[v as any] = ref.style[v as any];
+            });
+        }
+
+        // Styles defined in CSS, getComputedStyle returns a CSSStyleDeclaration object, which updates when the styles update.
+        if (ref) {
+          styles = Object.values(getComputedStyle(ref));
+
+          // Add the relevant styles to an object to store
+          styles &&
+            styles.forEach((v) => {
+              styleAsObject[v as any] = getComputedStyle(ref)[v as any];
+            });
+        }
+      }
+
+      // creates a widget object for a DOM element and saves relevant information inside */
+      const widget: Widget = {
+        id: xpathComponentId,
+        route: currentRoute ? currentRoute : "route not set",
+        children: children,
+        boundingHeight: boundingRect ? boundingRect.height : -1,
+        boundingWidth: boundingRect ? boundingRect.width : -1,
+        style: styleAsObject,
+        inlineStyle: inlineStyleAsObject,
+        xpos: boundingRect ? boundingRect.x : -1,
+        ypos: boundingRect ? boundingRect.y : -1,
+      };
+      return widget;
+    },
+    []
+  );
+
   /** computes current gui state */
   const getCurrentGuiState = useCallback(
-    (
-      children: ReactNode[] | ReactNode,
-      xpathId: string,
-      state: ReducerState,
-      typeMap: Map<string | undefined, TypeMapValueType>,
-      route?: string
-    ) => {
-      /** occurrence of specific html elements inside children array (e.g. how many div elements are in the children array, how many input element, etc.) to know if brackets are needed, if it is 1 or less, the brackets are omitted in xPath. */
-      let componentIndexMap = getXpathIndexMap(children, typeMap);
-      //keep track of count of already found html element types to write correct index in id
-      let currentIndexMap = new Map();
+    (xpathId: string | undefined, state: ReducerState, currentRoute) => {
+      console.log(
+        "getting current gui state with xpathId",
+        xpathId,
+        currentRoute
+      );
+      if (!xpathId)
+        return { widgets: undefined, stateId: -1, currentRoute: "" };
+      const ref = state.refs.get(xpathId);
+      console.log(ref);
+      let widgets_data = getGuiState(ref?.current);
+      const widgets = widgets_data ? widgets_data : undefined;
+      let guiState: GuiState = {
+        widgets,
+        stateId: getGuiStateId(state, widgets),
+        currentRoute,
+      };
 
-      return React.Children.map(children, (element: React.ReactNode, i) => {
-        if (!React.isValidElement(element)) return;
-
-        const { props, type } = element;
-
-        let xpathComponentId = "";
-
-        // compute Xpath Id
-        xpathComponentId = getXpathId(
-          element,
-          xpathId,
-          componentIndexMap,
-          currentIndexMap,
-          typeMap
-        );
-
-        let element_children: ReactNode | ReactNode[];
-
-        let currentRoute;
-        let isRoute = false;
-
-        if (
-          typeof type === "function" &&
-          !element_children &&
-          !((type as Function).name === "Route") &&
-          !((type as Function).name === "Switch") &&
-          !((type as Function).name === "Redirect")
-        ) {
-          const instantiatedElement = typeMap.get((type as Function).name)
-            ?.children[0];
-          if (isValidElement(instantiatedElement)) {
-            element_children = instantiatedElement.props.children;
-          }
-        } else if ((type as Function).name === "Route") {
-          if (props.path !== route) return;
-          currentRoute = props.path;
-          if (props.component) {
-            element_children = props.component().props.children;
-            isRoute = true;
-          } else if (element.props.render) {
-            element_children = props.render().props.children;
-            isRoute = true;
-          } else {
-            element_children = props.children;
-          }
-        } else {
-          element_children = props.children;
-        }
-
-        /** recursively computed widget tree */
-        let computedChildrenArray;
-
-        //skip links, and add to id that there is a link on the children
-        if (
-          (element.type as unknown as { displayName: string }).displayName ===
-            "Link" ||
-          (element.type as unknown as { displayName: string }).displayName ===
-            "NavLink"
-        ) {
-          xpathComponentId = xpathId + "/a";
-        }
-
-        let childrenToGet;
-        if (props.component) {
-          childrenToGet = props.component;
-        } else if (props.render) {
-          childrenToGet = props.render;
-        }
-
-        const routeType =
-          isRoute && childrenToGet ? typeMap.get(childrenToGet.name) : "";
-
-        if (routeType) {
-          //add route type
-          xpathComponentId = xpathComponentId + "/" + routeType.type;
-          console.log(xpathComponentId);
-        }
-
-        computedChildrenArray = getCurrentGuiState(
-          element_children,
-          xpathComponentId,
-          state,
-          typeMap,
-          currentRoute ? currentRoute : route
-        );
-
-        // get the reference from the global storage
-        const ref = state.refs.get(xpathComponentId);
-
-        /** bounding rect object of referenced element. Provides info on positioning and shape of element */
-        let boundingRect;
-
-        /** styles defined in css for example */
-        let styles;
-        /** styles defined in styles prop */
-        let inlineStyles;
-        let styleAsObject: any = {};
-        let inlineStyleAsObject: any = {};
-
-        if (!(type as any).prototype?.isReactComponent && ref && ref.current) {
-          try {
-            boundingRect = (ref.current as any).getBoundingClientRect();
-          } catch (e) {
-            console.log(
-              e,
-              "error in getting bounding rect from component",
-              ref.current
-            );
-          }
-
-          // inline styles, defined in js, need to be handled separately, because getComputedStyle does not return them. Returns a CSSStyleDeclaration object, which updates when the styles update.
-          if (ref.current.style && ref.current.style.length > 0) {
-            inlineStyles = Object.values(ref.current.style);
-
-            // Add the relevant styles to an object to store
-            inlineStyles &&
-              inlineStyles.forEach((v) => {
-                inlineStyleAsObject[v as any] = ref.current.style[v as any];
-              });
-          }
-
-          //TODO:
-          /*// Styles defined in CSS, getComputedStyle returns a CSSStyleDeclaration object, which updates when the styles update.
-          if (ref.current) {
-            styles = Object.values(getComputedStyle(ref.current));
-
-            // Add the relevant styles to an object to store
-            styles &&
-              styles.forEach((v) => {
-                styleAsObject[v as any] = getComputedStyle(ref.current)[
-                  v as any
-                ];
-              });
-          }*/
-        }
-
-        // creates a widget object for a DOM element and saves relevant information inside */
-        const widget: Widget = {
-          id: xpathComponentId,
-          route: currentRoute ? currentRoute : route ? route : "route not set",
-          children: computedChildrenArray ? computedChildrenArray : [],
-          boundingHeight: boundingRect ? boundingRect.height : -1,
-          boundingWidth: boundingRect ? boundingRect.width : -1,
-          style: styleAsObject,
-          inlineStyle: inlineStyleAsObject,
-          xpos: boundingRect ? boundingRect.x : -1,
-          ypos: boundingRect ? boundingRect.y : -1,
-        };
-
-        return widget;
-      });
+      return guiState;
     },
-    [getXpathIndexMap, getXpathId]
+    [getGuiState, getGuiStateId]
   );
 
   /** creates a nested array with objects, which contain the type of each functional component inside the app to be able to create xpath id's. Important to note is that

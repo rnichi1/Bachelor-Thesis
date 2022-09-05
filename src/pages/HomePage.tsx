@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { CustomButton } from "../components/Provider/Provider";
 import ComponentTest from "../components/ComponentTest";
 import { FaInbox } from "react-icons/fa";
-import { useState } from "react";
 
 export const HomePage = () => {
   return (
