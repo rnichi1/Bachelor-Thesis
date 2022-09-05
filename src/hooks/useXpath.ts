@@ -57,17 +57,28 @@ export const useXpath = () => {
       /** Type of the most outer element of a functional component */
       let fcChildrenType;
 
-      if (typeof type === "function") {
-        if (
-          !((type as Function).name === "Route") &&
-          !((type as Function).name === "Switch") &&
-          !((type as Function).name === "Redirect")
-        ) {
-          if (typeMap)
-            fcChildrenType = typeMap.get((type as Function).name)?.type;
-        } else {
-          return parentXpathId;
-        }
+      if (
+        typeof type === "function" &&
+        !(type as any).prototype?.isReactComponent &&
+        !((type as Function).name === "Route") &&
+        !((type as Function).name === "Switch") &&
+        !((type as Function).name === "Redirect")
+      ) {
+        if (typeMap)
+          fcChildrenType = typeMap.get((type as Function).name)?.type;
+      } else if (
+        typeof type === "function" &&
+        ((type as Function).name === "Redirect" ||
+          (type as Function).name === "Switch" ||
+          (type as Function).name === "Route")
+      ) {
+        return parentXpathId;
+      } else if (
+        typeof type === "function" &&
+        !!(type as any).prototype?.isReactComponent
+      ) {
+        console.log(element);
+        return parentXpathId + "/" + type.name;
       }
 
       if (typeof type === "symbol") {

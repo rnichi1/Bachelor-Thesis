@@ -95,11 +95,10 @@ const Provider = ({
   const functionalComponentTypes = getFunctionalComponentTypes({
     children: children,
   });
-  console.log(functionalComponentTypes);
+
   const typeMap: Map<string | undefined, TypeMapValueType> = getTypeMap(
     functionalComponentTypes
   );
-  console.log("typemap", typeMap);
 
   return (
     <>
@@ -129,18 +128,33 @@ export const CustomButton = ({ exampleProp }: { exampleProp: string }) => {
 export const CustomLayer = ({ exampleProp }: { exampleProp: string }) => {
   const [color, setColor] = useState("red");
   const [width, setWidth] = useState("300px");
+  const [showOne, setShowOne] = useState(false);
 
   return (
-    <button
-      style={{ height: "200px", color: color, width: width }}
-      onClick={() => {
-        if (color === "blue") setWidth("350px");
-        setColor("blue");
-      }}
-    >
-      <div>this is a custom button, can you see its child div?</div>
-      <div>this is a custom button, can you see its child div?</div>
-    </button>
+    <div>
+      <button
+        style={{ height: "200px", color: color, width: width }}
+        onClick={() => {
+          if (color === "blue") setWidth("350px");
+          setColor("blue");
+        }}
+      >
+        <div>this is a custom button, can you see its child div?</div>
+        <div>this is a custom button, can you see its child div?</div>
+      </button>
+      {showOne && (
+        <div>
+          <div>This is show one</div>
+        </div>
+      )}
+      <button
+        onClick={() => {
+          setShowOne(!showOne);
+        }}
+      >
+        show one
+      </button>
+    </div>
   );
 };
 
@@ -165,13 +179,11 @@ export const StartWalkthroughButton = () => {
   const startWalkthrough = useCallback(async () => {
     const initialGuiState = await getCurrentGuiState(
       firstParent,
-      XPATH_ID_BASE + "/div",
+      XPATH_ID_BASE,
       state,
       typeMap,
       currentRoute.pathname
     );
-
-    console.log(initialGuiState);
 
     const guiStateId = await getGuiStateId(state, initialGuiState);
 

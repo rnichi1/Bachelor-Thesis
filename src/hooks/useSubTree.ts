@@ -1,10 +1,13 @@
 import * as React from "react";
 import {
+  cloneElement,
+  Component,
   createElement,
   isValidElement,
   ReactNode,
   useCallback,
   useMemo,
+  useRef,
 } from "react";
 
 import { HocWrapper } from "../components/Provider/hocWrapper";
@@ -17,6 +20,7 @@ import { TypeMapValueType } from "../helpers/typeMap";
  */
 export const useSubTree = () => {
   const { getXpathId, getXpathIndexMap } = useXpath();
+  const ref = useRef();
 
   /**
    * returns a children subtree of any component as a React Node with custom props to collect user action data.
@@ -38,8 +42,6 @@ export const useSubTree = () => {
       //keep track of count of already found html element types to write correct index in id
       let currentIndexMap = new Map();
 
-      const typesMap = new Map();
-
       // avoid things like contexts, since they can't be used with Children.map
       if (typeof children === "function") {
         return children;
@@ -50,7 +52,7 @@ export const useSubTree = () => {
         if (!React.isValidElement(element)) return element;
 
         //destructure element properties
-        const { props } = element;
+        const { props, type } = element;
 
         const xpathComponentId = getXpathId(
           element,
@@ -78,12 +80,10 @@ export const useSubTree = () => {
           HocWrapper as any,
           {
             ...props,
-            xpathId: xpathId,
             loopIndex: i,
             xpathComponentId,
             typeMap,
             hasLink,
-            typesMap,
           },
           element
         );
@@ -101,29 +101,37 @@ export const useSubTree = () => {
 
     const { type, props } = functional;
 
-    /* console.log((type as Function)(props).type);
-
-    const { props: subProps } = (type as Function)(props);
-
-    if (
-      typeof !(type as Function)(props).type === "object" &&
-      !(type as Function)(props).type(subProps).type
-    ) {
-      return undefined;
-    }*/
-
-    if (!type || !(type as Function)(props)) {
-      console.log(
-        "for fuctional var",
-        functional,
-        "and type",
-        type,
-        " the functional was undefined when instantiated"
-      );
-      return undefined;
+    if ((type as Function).name !== "Route") {
+      if (!type || !(type as Function)(props)) {
+        console.log(
+          "for fuctional var",
+          functional,
+          "and type",
+          type,
+          " the functional was undefined when instantiated"
+        );
+        return undefined;
+      }
     }
 
-    if (typeof (type as Function)(props).type === "function") {
+    // check for routes as they can have children inside the component or render prop. These need to be looked at as well, in order to find the type and children of the component inside the route.
+    if ((type as Function).name === "Route") {
+      let route_children;
+
+      if ((functional.props as any).component) {
+        route_children = (functional.props as any).component;
+      } else if ((functional.props as any).render) {
+        route_children = (functional.props as any).render;
+      } else {
+        route_children = (functional.props as any).children;
+      }
+      if (typeof route_children().type === "function") {
+        return recursivelyInstantiateFunctionalComponent(route_children);
+      } else {
+        return route_children();
+      }
+    } else if (typeof (type as Function)(props).type === "function") {
+      // recursion over all children that are functional components to find the element that will actually be rendered on screen.
       return recursivelyInstantiateFunctionalComponent(
         (type as Function)(props)
       );
@@ -165,6 +173,7 @@ export const useSubTree = () => {
         let element_children: ReactNode | ReactNode[];
 
         let currentRoute;
+        let isRoute = false;
 
         if (
           typeof type === "function" &&
@@ -177,20 +186,16 @@ export const useSubTree = () => {
             ?.children[0];
           if (isValidElement(instantiatedElement)) {
             element_children = instantiatedElement.props.children;
-            console.log("ELEMENT CHILDREN", element_children);
-          } else {
-            console.log(
-              "ELEMENT CHILDREN NOT FOUND",
-              typeMap.get((type as Function).name)
-            );
           }
         } else if ((type as Function).name === "Route") {
           if (props.path !== route) return;
           currentRoute = props.path;
-          if (element.props.component) {
+          if (props.component) {
             element_children = props.component().props.children;
+            isRoute = true;
           } else if (element.props.render) {
             element_children = props.render().props.children;
+            isRoute = true;
           } else {
             element_children = props.children;
           }
@@ -198,7 +203,6 @@ export const useSubTree = () => {
           element_children = props.children;
         }
 
-        console.log(element_children, "are the children found");
         /** recursively computed widget tree */
         let computedChildrenArray;
 
@@ -212,16 +216,28 @@ export const useSubTree = () => {
           xpathComponentId = xpathId + "/a";
         }
 
+        let childrenToGet;
+        if (props.component) {
+          childrenToGet = props.component;
+        } else if (props.render) {
+          childrenToGet = props.render;
+        }
+
+        const routeType =
+          isRoute && childrenToGet ? typeMap.get(childrenToGet.name) : "";
+
+        if (routeType) {
+          //add route type
+          xpathComponentId = xpathComponentId + "/" + routeType.type;
+          console.log(xpathComponentId);
+        }
+
         computedChildrenArray = getCurrentGuiState(
           element_children,
           xpathComponentId,
           state,
           typeMap,
           currentRoute ? currentRoute : route
-        );
-        console.log(
-          computedChildrenArray,
-          "are the children computed as sub gui state"
         );
 
         // get the reference from the global storage
@@ -230,7 +246,14 @@ export const useSubTree = () => {
         /** bounding rect object of referenced element. Provides info on positioning and shape of element */
         let boundingRect;
 
-        if (ref && ref.current) {
+        /** styles defined in css for example */
+        let styles;
+        /** styles defined in styles prop */
+        let inlineStyles;
+        let styleAsObject: any = {};
+        let inlineStyleAsObject: any = {};
+
+        if (!(type as any).prototype?.isReactComponent && ref && ref.current) {
           try {
             boundingRect = (ref.current as any).getBoundingClientRect();
           } catch (e) {
@@ -240,18 +263,34 @@ export const useSubTree = () => {
               ref.current
             );
           }
+
+          // inline styles, defined in js, need to be handled separately, because getComputedStyle does not return them. Returns a CSSStyleDeclaration object, which updates when the styles update.
+          if (ref.current.style && ref.current.style.length > 0) {
+            inlineStyles = Object.values(ref.current.style);
+
+            // Add the relevant styles to an object to store
+            inlineStyles &&
+              inlineStyles.forEach((v) => {
+                inlineStyleAsObject[v as any] = ref.current.style[v as any];
+              });
+          }
+
+          //TODO:
+          /*// Styles defined in CSS, getComputedStyle returns a CSSStyleDeclaration object, which updates when the styles update.
+          if (ref.current) {
+            styles = Object.values(getComputedStyle(ref.current));
+
+            // Add the relevant styles to an object to store
+            styles &&
+              styles.forEach((v) => {
+                styleAsObject[v as any] = getComputedStyle(ref.current)[
+                  v as any
+                ];
+              });
+          }*/
         }
-        let values;
-        let styleAsObject: any = {};
 
-        if (ref?.current?.style) values = Object.values(ref?.current?.style);
-
-        values &&
-          values.forEach((v) => {
-            styleAsObject[v as any] = ref?.current?.style[v as any];
-          });
-
-        // convert an dom element into type widget and saves relevant information inside the widget object */
+        // creates a widget object for a DOM element and saves relevant information inside */
         const widget: Widget = {
           id: xpathComponentId,
           route: currentRoute ? currentRoute : route ? route : "route not set",
@@ -259,6 +298,7 @@ export const useSubTree = () => {
           boundingHeight: boundingRect ? boundingRect.height : -1,
           boundingWidth: boundingRect ? boundingRect.width : -1,
           style: styleAsObject,
+          inlineStyle: inlineStyleAsObject,
           xpos: boundingRect ? boundingRect.x : -1,
           ypos: boundingRect ? boundingRect.y : -1,
         };
@@ -279,25 +319,21 @@ export const useSubTree = () => {
 
         const { type, props } = element;
 
-        let element_children = [];
+        let element_children = props.children;
+        let route_name;
 
         //check for routes
-        if ((element.type as Function).name === "Route") {
+        if ((element.type as Function).name === "Route" && !props.children) {
           if (element.props.component) {
-            element_children = props.component().props.children;
-          } else if (element.props.render) {
-            element_children = props.render().props.children;
-          } else {
-            element_children = props.children;
+            route_name = props.component.name;
+          } else if (element.props.render.name) {
+            route_name = props.render;
           }
-        } else {
-          element_children = props.children;
         }
 
         if (
           typeof type === "function" &&
           !element_children &&
-          !((type as Function).name === "Route") &&
           !((type as Function).name === "Switch") &&
           !((type as Function).name === "Redirect")
         ) {
@@ -318,6 +354,13 @@ export const useSubTree = () => {
           ) {
             return {
               name: (type as Function).name,
+              type: element_children[0]?.type,
+              childrenTypes: childrenTypes,
+              children: element_children,
+            };
+          } else if ((type as Function).name === "Route") {
+            return {
+              name: route_name,
               type: element_children[0]?.type,
               childrenTypes: childrenTypes,
               children: element_children,

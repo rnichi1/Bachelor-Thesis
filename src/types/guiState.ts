@@ -22,5 +22,6 @@ export type Widget = {
   xpos: number;
   ypos: number;
   style: CSSStyleDeclaration | undefined;
+  inlineStyle: CSSStyleDeclaration | undefined;
   children: Widget[] | null;
 };

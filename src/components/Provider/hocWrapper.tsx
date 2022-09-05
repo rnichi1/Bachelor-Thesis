@@ -17,11 +17,9 @@ import { TypeMapValueType } from "../../helpers/typeMap";
  * */
 export const HocWrapper = ({
   children,
-  xpathId,
   xpathComponentId,
   typeMap,
   hasLink,
-  typesMap,
 }: {
   children: React.ReactElement;
   xpathId: string;
@@ -56,25 +54,21 @@ export const HocWrapper = ({
 
   let childElement: React.ReactNode;
 
-  if (typeof type === "function" && !props.children) {
+  if (
+    typeof type === "function" &&
+    !props.children &&
+    !(type as any).prototype?.isReactComponent
+  ) {
     //check that it is not a React Router specific component
-    if (
-      !((type as Function).name === "Route") &&
-      !((type as Function).name === "Switch") &&
-      !((type as Function).name === "Redirect")
-    ) {
-      // deep instantiate functional components
-      const instantiatedFc =
-        recursivelyInstantiateFunctionalComponent(children);
 
-      // Check if instantiated functional component is an element that React can render
-      if (!React.isValidElement(instantiatedFc) || !instantiatedFc) {
-        childElement = null;
-      } else {
-        childElement = clone(instantiatedFc, xpathComponentId);
-      }
+    // deep instantiate functional components
+    const instantiatedFc = recursivelyInstantiateFunctionalComponent(children);
+
+    // Check if instantiated functional component is an element that React can render
+    if (!React.isValidElement(instantiatedFc) || !instantiatedFc) {
+      childElement = null;
     } else {
-      childElement = clone(children, xpathComponentId);
+      childElement = clone(instantiatedFc, xpathComponentId);
     }
   } else {
     childElement = clone(children, xpathComponentId);
@@ -128,12 +122,11 @@ export const HocWrapper = ({
       // await the recording of the GUI state before any changes are made by the original click functionality.
       const prevGuiState = await getCurrentGuiState(
         firstParent,
-        XPATH_ID_BASE + "/div",
+        XPATH_ID_BASE,
         state,
         typeMap,
         currentRoute.pathname
       );
-      console.log(prevGuiState);
 
       // call the old onClick function, such that no original functionality gets lost.
       props.onClick && (await props.onClick());
@@ -141,13 +134,15 @@ export const HocWrapper = ({
       // get the GUI state after the click functionality has been executed.
       const currentGuiState = await getCurrentGuiState(
         firstParent,
-        XPATH_ID_BASE + "/div",
+        XPATH_ID_BASE,
         state,
         typeMap,
         currentRoute.pathname
       );
 
-      console.log(xpathComponentId);
+      console.log(prevGuiState, currentGuiState);
+
+      //TODO: Here we have a bug, somehow it gets classified first as a same state but then suddenly its a new state. check first if its only the current or only prev states or both
 
       // compute GUI state id of previous state
       const prevGuiStateID = await getGuiStateId(state, prevGuiState);
