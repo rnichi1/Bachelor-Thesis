@@ -7,7 +7,6 @@ import { isEqual } from "lodash";
 
 export const initialState: ReducerState = {
   actions: [],
-  ids: new Map(),
   refs: new Map(),
   guiStates: [],
   walkthroughActive: false,
@@ -15,7 +14,6 @@ export const initialState: ReducerState = {
 
 export enum ReducerActionEnum {
   UPDATE_ACTIONS = "UPDATE_ACTIONS",
-  UPDATE_IDS = "UPDATE_IDS",
   UPDATE_REFS = "UPDATE_REFS",
   UPDATE_GUI_STATES = "UPDATE_GUI_STATES",
   START_WALKTHROUGH = "START_WALKTHROUGH",
@@ -76,18 +74,7 @@ export const reducer: (
           ? [...state.actions, action.newUserAction.action]
           : state.actions,
       };
-    case ReducerActionEnum.UPDATE_IDS:
-      const idsCopy = state.ids;
-      if (!idsCopy.has(action.newIdObject?.id as string))
-        idsCopy.set(
-          action.newIdObject?.id as string,
-          action.newIdObject?.element
-        );
 
-      return {
-        ...state,
-        ids: idsCopy,
-      };
     case ReducerActionEnum.UPDATE_REFS:
       const refsCopy = state.refs;
       if (action.newRefObject?.id && action.newRefObject?.ref.current)

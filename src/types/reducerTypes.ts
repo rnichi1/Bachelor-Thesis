@@ -12,7 +12,6 @@ export type ReducerType = (
 export type ReducerState = {
   guiStates: GuiState[];
   actions: Action[];
-  ids: Map<string, React.ReactNode>;
   refs: Map<string, MutableRefObject<HTMLElement>>;
   walkthroughActive: boolean;
 };
@@ -20,7 +19,6 @@ export type ReducerState = {
 export type ActionType = {
   type: ReducerActionEnum;
   newUserAction?: { action: Action; prevActionWasRouting?: boolean };
-  newIdObject?: { id: string; element: React.ReactNode };
   newRefObject?: {
     id: string;
     ref: MutableRefObject<HTMLElement>;

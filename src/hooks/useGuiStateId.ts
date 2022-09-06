@@ -18,8 +18,7 @@ export const useGuiStateId = () => {
       state.guiStates.forEach((s) => {
         if (isEqual(widget, s.widgets)) {
           console.log(
-            "state already exists",
-            s,
+            "state already exists ",
             "state was not recorded and id ",
             s.stateId,
             " was returned"
@@ -31,7 +30,6 @@ export const useGuiStateId = () => {
       if (id === state.guiStates.length + 1) {
         console.log(
           "state does not exist yet ",
-          widget,
           " this new state was recorded with id ",
           state.guiStates.length + 1
         );
