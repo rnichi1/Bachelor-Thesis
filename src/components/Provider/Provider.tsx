@@ -1,31 +1,11 @@
-import React, { createContext, useReducer, useState } from "react";
+import React, { useReducer } from "react";
 import { useSubTree } from "../../hooks/useSubTree";
 import { initialState, reducer } from "../../reducer/reducer";
-import { ActionType, ReducerState } from "../../types/reducerTypes";
 import { Location } from "history";
 import { RecordingMenu } from "../ui/RecordingMenu";
+import { DataContext } from "../DataContext";
 
 export const XPATH_ID_BASE = "/html/body/div";
-
-/** Context to save GUI state data in global state */
-export const DataContext = createContext<{
-  state: ReducerState;
-  dispatch: React.Dispatch<ActionType>;
-  firstParent: React.ReactNode | React.ReactNode[];
-  currentRoute: Location<unknown>;
-  firstXpathId: string;
-}>({
-  state: {
-    actions: [],
-    refs: new Map(),
-    guiStates: [],
-    walkthroughActive: false,
-  },
-  dispatch: () => {},
-  firstParent: undefined,
-  currentRoute: { pathname: "/" } as Location<unknown>,
-  firstXpathId: "",
-});
 
 /** The Provider component can be used to wrap Route components or any subtree of a React application to record actions done by a user.
  * @param currentRoute the Location object from react-router-dom must be passed into here to keep track of routes
@@ -42,8 +22,9 @@ const Provider = ({
   children?: React.ReactNode | React.ReactNode[];
 }) => {
   //custom hooks
-  const { getSubTree } = useSubTree();
+  const { injectHoc } = useSubTree();
 
+  /** reducer initialization */
   const [state, dispatch] = useReducer(reducer, initialState);
 
   return (
@@ -59,7 +40,7 @@ const Provider = ({
       >
         <RecordingMenu />
         {children
-          ? getSubTree(children, dispatch, XPATH_ID_BASE, firstXpathId)
+          ? injectHoc(children, dispatch, XPATH_ID_BASE, firstXpathId)
           : null}
       </DataContext.Provider>
     </>

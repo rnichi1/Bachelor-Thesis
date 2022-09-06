@@ -1,13 +1,7 @@
-import * as React from "react";
 import { ReducerActionEnum } from "../reducer/reducer";
 import { Action } from "./actions";
 import { MutableRefObject } from "react";
 import { GuiState } from "./guiState";
-
-export type ReducerType = (
-  state: ReducerState,
-  action: ActionType
-) => ReducerState;
 
 export type ReducerState = {
   guiStates: GuiState[];
@@ -18,7 +12,10 @@ export type ReducerState = {
 
 export type ActionType = {
   type: ReducerActionEnum;
-  newUserAction?: { action: Action; prevActionWasRouting?: boolean };
+  newUserAction?: {
+    action: Action;
+    prevActionWasRouting?: boolean;
+  };
   newRefObject?: {
     id: string;
     ref: MutableRefObject<HTMLElement>;

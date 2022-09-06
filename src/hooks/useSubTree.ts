@@ -1,5 +1,5 @@
 import * as React from "react";
-import { createElement, ReactNode, useCallback, useMemo } from "react";
+import { createElement, useCallback, useMemo } from "react";
 
 import { HocWrapper } from "../components/Provider/hocWrapper";
 import { GuiState, Widget } from "../types/guiState";
@@ -15,13 +15,13 @@ export const useSubTree = () => {
   const { getGuiStateId } = useGuiStateId();
 
   /**
-   * returns a children subtree of any component as a React Node with custom props to collect user action data.
+   * returns a children subtree of any component with each component wrapped in a HOC that injects custom functionality into action functions.
    @param children the react component subtree
    @param dispatch function used for saving data to reducer
    @param parentId Id of parent component
    @param xpathId xpathId
   */
-  const getSubTree = useCallback(
+  const injectHoc = useCallback(
     (
       children: React.ReactNode | React.ReactNode[],
       dispatch: React.Dispatch<ActionType>,
@@ -44,12 +44,13 @@ export const useSubTree = () => {
       let childrenIndex = 0;
 
       return React.Children.map(children, (element: React.ReactNode) => {
-        //Check if element is an element that React can render
+        // Check if element is an element that React can render
         if (!React.isValidElement(element)) return element;
 
-        //destructure element properties
+        // destructure element properties
         const { type } = element;
 
+        // compute xpathId
         const xpathComponentId = getXpathId(
           element,
           xpathId,
@@ -59,6 +60,7 @@ export const useSubTree = () => {
           parentRef
         );
 
+        // increment index, this is handled separately because of components that are not considered valid elements and thus skew the actual type indices of xpath ids if counted.
         childrenIndex++;
 
         let parentId =
@@ -68,30 +70,19 @@ export const useSubTree = () => {
             ? firstXpathId
             : xpathComponentId;
 
+        /** id if it is a Link component */
         const linkAddedToId = xpathId + "/a";
 
-        //check that hasLink is only true for Link components
+        // check that hasLink is only true for Link components
         if (hasLink) {
           hasLink = false;
         }
 
-        // Mark links so that router actions are handled correctly.
+        // mark links so that router actions are handled correctly.
         if (
           (type as any).displayName === "Link" ||
           (type as any).displayName === "NavLink"
         ) {
-          /*return React.cloneElement(
-            element,
-            { ...props },
-            getSubTree(
-              props.children,
-              dispatch,
-              xpathId + "/a",
-              typeMap,
-              parentId,
-              true
-            )
-          );*/
           hasLink = true;
         }
 
@@ -109,6 +100,7 @@ export const useSubTree = () => {
     [getXpathIndexMap, getXpathId]
   );
 
+  /** instantiates a functional object recursively to get its first DOM element to be rendered, such that functionality can be injected. This recursive procedure is needed, because of nested functional components, which are not rendered until the first DOM element. */
   const recursivelyInstantiateFunctionalComponent: (
     functional: any
   ) => React.ReactNode | React.ReactNode[] = useCallback((functional: any) => {
@@ -118,13 +110,6 @@ export const useSubTree = () => {
 
     if ((type as Function).name !== "Route") {
       if (!type || !(type as Function)(props)) {
-        console.log(
-          "for fuctional var",
-          functional,
-          "and type",
-          type,
-          " the functional was undefined when instantiated"
-        );
         return undefined;
       }
     }
@@ -222,7 +207,7 @@ export const useSubTree = () => {
         inputValue = ref.attributes?.getNamedItem("inputvalue")?.value;
       }
 
-      // creates a widget object for a DOM element and saves relevant information inside */
+      /** creates a widget object for a DOM element and saves relevant information inside */
       const widget: Widget = {
         id: xpathComponentId,
         route: currentRoute ? currentRoute : "route not set",
@@ -262,12 +247,12 @@ export const useSubTree = () => {
 
   return useMemo(() => {
     return {
-      getSubTree,
+      injectHoc,
       getCurrentGuiState,
       recursivelyInstantiateFunctionalComponent,
     };
   }, [
-    getSubTree,
+    injectHoc,
     getCurrentGuiState,
     recursivelyInstantiateFunctionalComponent,
   ]);

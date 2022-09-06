@@ -9,8 +9,8 @@ import {
 } from "react";
 import { ReducerActionEnum } from "../../reducer/reducer";
 import { PossibleAction } from "../../types/actions";
-import { DataContext } from "./Provider";
 import { useSubTree } from "../../hooks/useSubTree";
+import { DataContext } from "../DataContext";
 
 /** This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
  * @param children wrapped component.
@@ -43,7 +43,7 @@ export const HocWrapper = ({
 
   // custom hooks
   const {
-    getSubTree,
+    injectHoc,
     getCurrentGuiState,
     recursivelyInstantiateFunctionalComponent,
   } = useSubTree();
@@ -109,7 +109,7 @@ export const HocWrapper = ({
       e.persist();
 
       // call the existing onChange function, such that no original functionality gets lost.
-      if (props.onSubmit) props.onChange(e);
+      if (props.onChange) props.onChange(e);
 
       await setCurrentInputSynchronously(e.target.value);
 
@@ -124,25 +124,30 @@ export const HocWrapper = ({
       const prevGuiState = state.actions[state.actions.length - 1]?.nextState;
 
       // save the action data to the global storage
-      dispatch({
-        type: ReducerActionEnum.UPDATE_ACTIONS,
-        newUserAction: {
-          action: {
-            actionType: PossibleAction.INPUT,
-            timestamp: new Date().getTime(),
-            elementId: xpathComponentId,
-            nextState: currentGuiState,
-            prevState: prevGuiState,
+      state.walkthroughActive &&
+        dispatch({
+          type: ReducerActionEnum.UPDATE_ACTIONS,
+          newUserAction: {
+            action: {
+              actionType: PossibleAction.INPUT,
+              elementId: xpathComponentId,
+              prevStateId: prevGuiState.stateId,
+              currentGuiStateId: currentGuiState.stateId,
+              prevState: prevGuiState,
+              nextState: currentGuiState,
+              wasPropagated: false,
+              timestamp: new Date().getTime(),
+            },
+            prevActionWasRouting: false,
           },
-          prevActionWasRouting: false,
-        },
-      });
+        });
 
       // save the current gui state in the global storage
-      dispatch({
-        type: ReducerActionEnum.UPDATE_GUI_STATES,
-        newGuiState: currentGuiState,
-      });
+      state.walkthroughActive &&
+        dispatch({
+          type: ReducerActionEnum.UPDATE_GUI_STATES,
+          newGuiState: currentGuiState,
+        });
     };
 
     /** injects new submit functionality */
@@ -152,6 +157,10 @@ export const HocWrapper = ({
       if (hasLink) {
         e.stopPropagation();
       }
+
+      // check if this is the element the user did the action on
+      const wasPropagatedEvent = e.target !== e.currentTarget;
+
       // call the existing onSubmit function, such that no original functionality gets lost.
       if (props.onSubmit) props.onSubmit(e);
 
@@ -166,25 +175,30 @@ export const HocWrapper = ({
       const prevGuiState = state.actions[state.actions.length - 1]?.nextState;
 
       // save the action data to the global storage
-      dispatch({
-        type: ReducerActionEnum.UPDATE_ACTIONS,
-        newUserAction: {
-          action: {
-            actionType: PossibleAction.SUBMIT,
-            timestamp: new Date().getTime(),
-            elementId: xpathComponentId,
-            nextState: currentGuiState,
-            prevState: prevGuiState,
+      state.walkthroughActive &&
+        dispatch({
+          type: ReducerActionEnum.UPDATE_ACTIONS,
+          newUserAction: {
+            action: {
+              actionType: PossibleAction.SUBMIT,
+              elementId: xpathComponentId,
+              prevStateId: prevGuiState.stateId,
+              currentGuiStateId: currentGuiState.stateId,
+              prevState: prevGuiState,
+              nextState: currentGuiState,
+              wasPropagated: wasPropagatedEvent,
+              timestamp: new Date().getTime(),
+            },
+            prevActionWasRouting: false,
           },
-          prevActionWasRouting: false,
-        },
-      });
+        });
 
       // save the current gui state in the global storage
-      dispatch({
-        type: ReducerActionEnum.UPDATE_GUI_STATES,
-        newGuiState: currentGuiState,
-      });
+      state.walkthroughActive &&
+        dispatch({
+          type: ReducerActionEnum.UPDATE_GUI_STATES,
+          newGuiState: currentGuiState,
+        });
     };
 
     /** injects new click functionality */
@@ -193,6 +207,9 @@ export const HocWrapper = ({
       if (hasLink) {
         e.stopPropagation();
       }
+
+      // check if this is the element the user did the action on
+      const wasPropagatedEvent = e.target !== e.currentTarget;
 
       // call the existing onClick function, such that no original functionality gets lost.
       props.onClick && props.onClick(e);
@@ -215,25 +232,30 @@ export const HocWrapper = ({
         state.actions[state.actions.length - 1].actionType === "ROUTE";
 
       // save the action data to the global storage
-      dispatch({
-        type: ReducerActionEnum.UPDATE_ACTIONS,
-        newUserAction: {
-          action: {
-            actionType: hasLink ? PossibleAction.ROUTE : PossibleAction.CLICK,
-            timestamp: new Date().getTime(),
-            elementId: xpathComponentId,
-            nextState: currentGuiState,
-            prevState: prevGuiState,
+      state.walkthroughActive &&
+        dispatch({
+          type: ReducerActionEnum.UPDATE_ACTIONS,
+          newUserAction: {
+            action: {
+              actionType: hasLink ? PossibleAction.ROUTE : PossibleAction.CLICK,
+              elementId: xpathComponentId,
+              prevStateId: prevGuiState.stateId,
+              currentGuiStateId: currentGuiState.stateId,
+              prevState: prevGuiState,
+              nextState: currentGuiState,
+              wasPropagated: wasPropagatedEvent,
+              timestamp: new Date().getTime(),
+            },
+            prevActionWasRouting: prevActionWasRouting,
           },
-          prevActionWasRouting: prevActionWasRouting,
-        },
-      });
+        });
 
       // save the current gui state in the global storage
-      dispatch({
-        type: ReducerActionEnum.UPDATE_GUI_STATES,
-        newGuiState: currentGuiState,
-      });
+      state.walkthroughActive &&
+        dispatch({
+          type: ReducerActionEnum.UPDATE_GUI_STATES,
+          newGuiState: currentGuiState,
+        });
     };
 
     // destructure element type and props
@@ -256,7 +278,7 @@ export const HocWrapper = ({
     }
 
     // add children and recursively call getSubTree function, which wraps all children in the HOC.
-    const subTree = getSubTree(
+    const subTree = injectHoc(
       element_children,
       dispatch,
       xpathComponentId,

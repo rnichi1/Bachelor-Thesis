@@ -5,6 +5,7 @@ import { MutableRefObject } from "react";
 import { GuiState } from "../types/guiState";
 import { isEqual } from "lodash";
 
+/** initial state of the reducer */
 export const initialState: ReducerState = {
   actions: [],
   refs: new Map(),
@@ -12,6 +13,7 @@ export const initialState: ReducerState = {
   walkthroughActive: false,
 };
 
+/** all the different reducer update actions that are done to update global state. */
 export enum ReducerActionEnum {
   UPDATE_ACTIONS = "UPDATE_ACTIONS",
   UPDATE_REFS = "UPDATE_REFS",
@@ -20,6 +22,7 @@ export enum ReducerActionEnum {
   END_WALKTHROUGH = "END_WALKTHROUGH",
 }
 
+/** this reducer handles global state management. Actions can be dispatched with the dispatch function. */
 export const reducer: (
   state: ReducerState,
   action: {
@@ -52,15 +55,12 @@ export const reducer: (
 ) => {
   switch (action.type) {
     case ReducerActionEnum.UPDATE_ACTIONS:
+      // check if previous action was routing to change the state of the routing action. This is required because during the routing, the refs are not available of the page that is loading. Since the last action is ending the recording, this is safe to do.
       if (action.newUserAction?.prevActionWasRouting) {
         const stateActionsCopy = [...state.actions];
         stateActionsCopy[stateActionsCopy.length - 1].nextState =
           action.newUserAction.action.nextState;
-        console.log(
-          "since we routed before, nextState was changed to: ",
-          action.newUserAction.action.nextState
-        );
-        console.log(stateActionsCopy[stateActionsCopy.length - 1]);
+
         return {
           ...state,
           actions: action.newUserAction?.action

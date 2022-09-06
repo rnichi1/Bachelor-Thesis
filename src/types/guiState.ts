@@ -13,6 +13,8 @@ export type GuiState = {
  * @param ypos the actual position of the component in the y direction on the screen.
  * @param style all the defined css styles. (the undefined styles are not included)
  * @param children all widgets that are wrapped by this widget in the JSX tree.
+ * @param text optional parameter that provides the value of text content inside an element so that it is also considered for GUI state changes
+ * @param inputValue optional parameter that provides the value of input elements so that it is also considered for GUI state changes
  */
 export type Widget = {
   id: string | null;

@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/rnichi1"
   },
-  "version": "0.5.4",
+  "version": "0.5.7",
   "description": "A testing library for collecting UI data",
   "author": "Remus Nichiteanu",
   "private": false,

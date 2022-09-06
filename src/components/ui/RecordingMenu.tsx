@@ -3,17 +3,18 @@ import { useSubTree } from "../../hooks/useSubTree";
 import { useGuiStateId } from "../../hooks/useGuiStateId";
 import { ReducerActionEnum } from "../../reducer/reducer";
 import { PossibleAction } from "../../types/actions";
-import { DataContext } from "../Provider/Provider";
+import { DataContext } from "../DataContext";
 
-/** Buttons for starting and ending a recording and for printing the collected data. This UI can be moved with the buttons provided, in case that it covers any relevant GUI elements. */
+/** UI for starting and ending a recording and for printing the collected data. This UI can be moved with the buttons provided, in case that it covers any relevant GUI elements. */
 export const RecordingMenu = () => {
   let { state, firstParent, dispatch, currentRoute, firstXpathId } =
     useContext(DataContext);
 
-  //custom hooks
+  // custom hooks
   const { getCurrentGuiState } = useSubTree();
   const { getGuiStateId } = useGuiStateId();
 
+  // variables for the placement of the UI
   const [uiButtonPlacement, setUiButtonPlacement] = useState(2);
   const [uiButtonPlacementRight, setUiButtonPlacementRight] = useState(2);
 
@@ -32,10 +33,13 @@ export const RecordingMenu = () => {
       newUserAction: {
         action: {
           actionType: PossibleAction.START_WALKTHROUGH,
-          timestamp: new Date().getTime(),
           elementId: "start-walkthrough-button",
+          prevStateId: initialGuiState.stateId,
+          currentGuiStateId: initialGuiState.stateId,
           nextState: initialGuiState,
           prevState: initialGuiState,
+          wasPropagated: false,
+          timestamp: new Date().getTime(),
         },
         prevActionWasRouting: false,
       },
@@ -63,6 +67,9 @@ export const RecordingMenu = () => {
       currentRoute.pathname
     );
 
+    /** Previous state recorded by the last action */
+    const prevGuiState = state.actions[state.actions.length - 1]?.nextState;
+
     //check if routing action needs to adjust previous state variable
     const prevActionWasRouting =
       state.actions[state.actions.length - 1] &&
@@ -75,10 +82,13 @@ export const RecordingMenu = () => {
       newUserAction: {
         action: {
           actionType: PossibleAction.END_WALKTHROUGH,
-          timestamp: new Date().getTime(),
           elementId: "end-walkthrough-button",
+          prevStateId: prevGuiState.stateId,
+          currentGuiStateId: finalGuiState.stateId,
+          prevState: prevGuiState,
           nextState: finalGuiState,
-          prevState: finalGuiState,
+          wasPropagated: false,
+          timestamp: new Date().getTime(),
         },
         prevActionWasRouting: prevActionWasRouting,
       },
@@ -122,7 +132,13 @@ export const RecordingMenu = () => {
           height: "50px",
         }}
         onClick={() => {
-          console.log("current action sequence", state.actions);
+          console.log("current full action sequence", state.actions);
+          console.log(
+            "current action sequence without propagated actions",
+            state.actions.filter((a) => {
+              return !a.wasPropagated;
+            })
+          );
           console.log("encountered GUI States", state.guiStates);
           console.log("is recording active", state.walkthroughActive);
         }}
