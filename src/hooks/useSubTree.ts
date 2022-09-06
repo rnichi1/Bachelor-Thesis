@@ -5,7 +5,6 @@ import { HocWrapper } from "../components/Provider/hocWrapper";
 import { GuiState, Widget } from "../types/guiState";
 import { ActionType, ReducerState } from "../types/reducerTypes";
 import { useXpath } from "./useXpath";
-import { TypeMapValueType } from "../helpers/typeMap";
 import { XPATH_ID_BASE } from "../components/Provider/Provider";
 import { useGuiStateId } from "./useGuiStateId";
 
@@ -27,13 +26,12 @@ export const useSubTree = () => {
       children: React.ReactNode | React.ReactNode[],
       dispatch: React.Dispatch<ActionType>,
       xpathId: string,
-      typeMap: Map<string | undefined, TypeMapValueType>,
       firstXpathId?: string,
       parentRef?: React.MutableRefObject<HTMLElement>,
       hasLink?: boolean
     ): React.ReactNode | React.ReactNode[] => {
       /** occurrence of specific html elements inside children array (e.g. how many div elements are in the children array, how many input element, etc.) to know if brackets are needed, if it is 1 or less, the brackets are omitted in xPath. */
-      let componentIndexMap = getXpathIndexMap(children, typeMap, parentRef);
+      let componentIndexMap = getXpathIndexMap(children, parentRef);
       //keep track of count of already found html element types to write correct index in id
       let currentIndexMap = new Map();
 
@@ -57,7 +55,6 @@ export const useSubTree = () => {
           xpathId,
           componentIndexMap,
           currentIndexMap,
-          typeMap,
           childrenIndex,
           parentRef
         );
@@ -102,7 +99,6 @@ export const useSubTree = () => {
         const wrappedElement = createElement(HocWrapper, {
           children: element,
           xpathComponentId: hasLink ? linkAddedToId : xpathComponentId,
-          typeMap,
           hasLink,
           parentId,
         });
@@ -171,10 +167,15 @@ export const useSubTree = () => {
       let styles;
       /** styles defined in styles prop */
       let inlineStyles;
+      /** custom object for styles */
       let styleAsObject: any = {};
+      /** custom object for inline styles */
       let inlineStyleAsObject: any = {};
+      /** xpath id of component */
       let xpathComponentId: string | null = "";
+      /** children computed from the childrenNodes array of the DOM reference */
       let children: Widget[] = [];
+      /** strings which are not valid react elements */
       let text: string | null = "";
 
       if (ref && ref.localName) {
@@ -191,7 +192,7 @@ export const useSubTree = () => {
           console.log(e, "error in getting bounding rect from component", ref);
         }
 
-        // inline styles, defined in js, need to be handled separately, because getComputedStyle does not return them. Returns a CSSStyleDeclaration object, which updates when the styles update.
+        // inline styles, defined in js, need to be handled separately, because getComputedStyle does not return them. Returns a CSSStyleDeclaration object, which updates when the styles update in the DOM.
         if (ref.style && ref.style.length > 0) {
           inlineStyles = Object.values(ref.style);
 
@@ -202,7 +203,7 @@ export const useSubTree = () => {
             });
         }
 
-        // Styles defined in CSS, getComputedStyle returns a CSSStyleDeclaration object, which updates when the styles update.
+        // Styles defined in CSS, getComputedStyle returns a CSSStyleDeclaration object, which updates when the styles update in the DOM.
         if (ref) {
           styles = Object.values(getComputedStyle(ref));
 
@@ -213,7 +214,12 @@ export const useSubTree = () => {
             });
         }
       } else {
+        // adds text elements to state so that text content changes are recorded as well
         text = ref.textContent;
+      }
+      let inputValue;
+      if (ref.attributes?.getNamedItem("inputvalue")) {
+        inputValue = ref.attributes?.getNamedItem("inputvalue")?.value;
       }
 
       // creates a widget object for a DOM element and saves relevant information inside */
@@ -228,6 +234,7 @@ export const useSubTree = () => {
         xpos: boundingRect ? boundingRect.x : -1,
         ypos: boundingRect ? boundingRect.y : -1,
         text: text ? text : undefined,
+        inputValue: inputValue ? inputValue : undefined,
       };
       return widget;
     },
@@ -253,81 +260,15 @@ export const useSubTree = () => {
     [getGuiState, getGuiStateId]
   );
 
-  /** creates a nested array with objects, which contain the type of each functional component inside the app to be able to create xpath id's. Important to note is that
-   * functional components don't have a children object if it is not specifically defined in the props, thus the functional parameter is used to find nested functional components' type recursively.
-   * */
-  const getFunctionalComponentTypes = useCallback(
-    ({ children }: { children?: ReactNode[] | ReactNode }) => {
-      return React.Children.map(children, (element: React.ReactNode, i) => {
-        if (!React.isValidElement(element)) return;
-
-        const { type, props } = element;
-
-        let element_children = props.children;
-        let route_name;
-
-        //check for routes
-        if ((element.type as Function).name === "Route" && !props.children) {
-          if (element.props.component) {
-            route_name = props.component.name;
-          } else if (element.props.render.name) {
-            route_name = props.render;
-          }
-        }
-
-        if (
-          typeof type === "function" &&
-          !element_children &&
-          !((type as Function).name === "Switch") &&
-          !((type as Function).name === "Redirect")
-        ) {
-          element_children = [
-            recursivelyInstantiateFunctionalComponent(element),
-          ];
-        }
-
-        let childrenTypes: any = getFunctionalComponentTypes({
-          children: element_children,
-        });
-
-        if (typeof type === "function") {
-          if (
-            !((type as Function).name === "Route") &&
-            !((type as Function).name === "Switch") &&
-            !((type as Function).name === "Redirect")
-          ) {
-            return {
-              name: (type as Function).name,
-              type: element_children[0]?.type,
-              childrenTypes: childrenTypes,
-              children: element_children,
-            };
-          } else if ((type as Function).name === "Route") {
-            return {
-              name: route_name,
-              type: element_children[0]?.type,
-              childrenTypes: childrenTypes,
-              children: element_children,
-            };
-          }
-        }
-        return { childrenTypes: childrenTypes };
-      });
-    },
-    [recursivelyInstantiateFunctionalComponent]
-  );
-
   return useMemo(() => {
     return {
       getSubTree,
       getCurrentGuiState,
-      getFunctionalComponentTypes,
       recursivelyInstantiateFunctionalComponent,
     };
   }, [
     getSubTree,
     getCurrentGuiState,
-    getFunctionalComponentTypes,
     recursivelyInstantiateFunctionalComponent,
   ]);
 };

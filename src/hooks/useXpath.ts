@@ -1,13 +1,11 @@
 import * as React from "react";
 import { useCallback, useMemo } from "react";
-import { TypeMapValueType } from "../helpers/typeMap";
 
 export const useXpath = () => {
   /** computes occurrence counters of specific html elements inside the children */
   const getXpathIndexMap = useCallback(
     (
       childrenArray: React.ReactNode | React.ReactNode[],
-      typeMap: Map<string | undefined, TypeMapValueType>,
       parentRef?: React.MutableRefObject<HTMLElement>
     ) => {
       const ref: HTMLElement | undefined = parentRef?.current;
@@ -61,7 +59,6 @@ export const useXpath = () => {
       parentXpathId: string,
       componentIndexMap: Map<any, any>,
       currentIndexMap: Map<any, any>,
-      typeMap: Map<string | undefined, TypeMapValueType>,
       childrenIndex: number,
       parentRef?: React.MutableRefObject<HTMLElement>
     ) => {

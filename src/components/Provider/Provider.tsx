@@ -12,7 +12,6 @@ import {
   ReducerActionEnum,
 } from "../../reducer/reducer";
 import { ActionType, ReducerState } from "../../types/reducerTypes";
-import { getTypeMap, TypeMapValueType } from "../../helpers/typeMap";
 import { useGuiStateId } from "../../hooks/useGuiStateId";
 import { PossibleAction } from "../../types/actions";
 import { Location } from "history";
@@ -24,7 +23,6 @@ export const DataContext = createContext<{
   state: ReducerState;
   dispatch: React.Dispatch<ActionType>;
   firstParent: React.ReactNode | React.ReactNode[];
-  typeMap: Map<string | undefined, TypeMapValueType>;
   currentRoute: Location<unknown>;
   firstXpathId: string;
 }>({
@@ -37,7 +35,6 @@ export const DataContext = createContext<{
   },
   dispatch: () => {},
   firstParent: undefined,
-  typeMap: new Map(),
   currentRoute: { pathname: "/" } as Location<unknown>,
   firstXpathId: "",
 });
@@ -52,18 +49,18 @@ const Provider = ({
   children?: React.ReactNode | React.ReactNode[];
 }) => {
   //custom hooks
-  const { getSubTree, getFunctionalComponentTypes } = useSubTree();
+  const { getSubTree } = useSubTree();
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  //get type map for all functional components inside application
+  /*//get type map for all functional components inside application
   const functionalComponentTypes = getFunctionalComponentTypes({
     children: children,
   });
 
   const typeMap: Map<string | undefined, TypeMapValueType> = getTypeMap(
     functionalComponentTypes
-  );
+  );*/
 
   return (
     <>
@@ -72,14 +69,13 @@ const Provider = ({
           state,
           dispatch,
           firstParent: children,
-          typeMap,
           currentRoute,
           firstXpathId,
         }}
       >
         <StartWalkthroughButton />
         {children
-          ? getSubTree(children, dispatch, XPATH_ID_BASE, typeMap, firstXpathId)
+          ? getSubTree(children, dispatch, XPATH_ID_BASE, firstXpathId)
           : null}
       </DataContext.Provider>
     </>
@@ -125,7 +121,7 @@ export const CustomLayer = ({ exampleProp }: { exampleProp: string }) => {
 
 /** Buttons for starting and ending a walkthrough and to print the collected data. They can be moved with the buttons provided, in case that they cover any relevant GUI elements. */
 export const StartWalkthroughButton = () => {
-  let { state, firstParent, typeMap, dispatch, currentRoute, firstXpathId } =
+  let { state, firstParent, dispatch, currentRoute, firstXpathId } =
     useContext(DataContext);
 
   //custom hooks
@@ -167,7 +163,6 @@ export const StartWalkthroughButton = () => {
     firstParent,
     getCurrentGuiState,
     state,
-    typeMap,
     currentRoute.pathname,
     getGuiStateId,
     firstXpathId,
@@ -210,7 +205,6 @@ export const StartWalkthroughButton = () => {
     firstParent,
     getCurrentGuiState,
     state,
-    typeMap,
     currentRoute.pathname,
     getGuiStateId,
     firstXpathId,

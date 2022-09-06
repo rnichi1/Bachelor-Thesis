@@ -1,10 +1,16 @@
 import * as React from "react";
-import { ReactElement, useContext, useEffect, useRef } from "react";
+import {
+  ReactElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { ReducerActionEnum } from "../../reducer/reducer";
 import { PossibleAction } from "../../types/actions";
 import { DataContext } from "./Provider";
 import { useSubTree } from "../../hooks/useSubTree";
-import { TypeMapValueType } from "../../helpers/typeMap";
 
 /** This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
  * @param children wrapped component.
@@ -17,13 +23,11 @@ import { TypeMapValueType } from "../../helpers/typeMap";
 export const HocWrapper = ({
   children,
   xpathComponentId,
-  typeMap,
   hasLink,
   parentId,
 }: {
   children: React.ReactElement;
   xpathComponentId: string;
-  typeMap: Map<string | undefined, TypeMapValueType>;
   hasLink?: boolean;
   parentId?: string;
 }) => {
@@ -46,6 +50,14 @@ export const HocWrapper = ({
 
   /** ref for current element */
   const ref: React.MutableRefObject<HTMLElement> = useRef<any>();
+
+  /** for input components to keep track of their input value */
+  const [currentInput, setCurrentInput] = useState("");
+
+  /** callback function for setting input with an async function, such that library waits for the variable to update before recording new state */
+  const setCurrentInputSynchronously = useCallback(async (input: string) => {
+    setCurrentInput(input);
+  }, []);
 
   // destructure type and props
   const { type, props } = children;
@@ -71,14 +83,6 @@ export const HocWrapper = ({
     childElement = clone(children, xpathComponentId);
   }
 
-  /*if (typeof type === "function") {
-    if (!!(type as any).prototype?.isReactComponent) {
-      if (ref.current && (ReactDOM.findDOMNode(ref.current) as any)) {
-        console.log(ref.current, type, ReactDOM.findDOMNode(ref.current));
-      }
-    }
-  }*/
-
   // save reference to dom element in global storage
   useEffect(() => {
     if (
@@ -100,21 +104,98 @@ export const HocWrapper = ({
 
   /** This function clones an element passed to it and adds the necessary data retrieval functionality to each action a user can take on the element. */
   function clone(element: React.ReactElement, xpathComponentId: string) {
-    //Overwrite submit function, but keep old functionality
-    function handleSubmit(e: any) {
-      e.stopPropagation();
-      if (props.onSubmit) props.onSubmit(e);
-      console.log("You clicked submit for the injected function.");
-    }
+    /** injects new change functionality for inputs */
+    const handleChange = async (e: any) => {
+      e.persist();
 
+      // call the existing onChange function, such that no original functionality gets lost.
+      if (props.onSubmit) props.onChange(e);
+
+      await setCurrentInputSynchronously(e.target.value);
+
+      /** the GUI state after the action functionality has been executed. */
+      const currentGuiState = await getCurrentGuiState(
+        parentId,
+        state,
+        currentRoute.pathname
+      );
+
+      /** Previous state recorded by the last action */
+      const prevGuiState = state.actions[state.actions.length - 1]?.nextState;
+
+      // save the action data to the global storage
+      dispatch({
+        type: ReducerActionEnum.UPDATE_ACTIONS,
+        newUserAction: {
+          action: {
+            actionType: PossibleAction.INPUT,
+            timestamp: new Date().getTime(),
+            elementId: xpathComponentId,
+            nextState: currentGuiState,
+            prevState: prevGuiState,
+          },
+          prevActionWasRouting: false,
+        },
+      });
+
+      // save the current gui state in the global storage
+      dispatch({
+        type: ReducerActionEnum.UPDATE_GUI_STATES,
+        newGuiState: currentGuiState,
+      });
+    };
+
+    /** injects new submit functionality */
+    const handleSubmit = async (e: any) => {
+      e.persist();
+      e.preventDefault();
+      if (hasLink) {
+        e.stopPropagation();
+      }
+      // call the existing onSubmit function, such that no original functionality gets lost.
+      if (props.onSubmit) props.onSubmit(e);
+
+      /** the GUI state after the action functionality has been executed. */
+      const currentGuiState = await getCurrentGuiState(
+        parentId,
+        state,
+        currentRoute.pathname
+      );
+
+      /** Previous state recorded by the last action */
+      const prevGuiState = state.actions[state.actions.length - 1]?.nextState;
+
+      // save the action data to the global storage
+      dispatch({
+        type: ReducerActionEnum.UPDATE_ACTIONS,
+        newUserAction: {
+          action: {
+            actionType: PossibleAction.SUBMIT,
+            timestamp: new Date().getTime(),
+            elementId: xpathComponentId,
+            nextState: currentGuiState,
+            prevState: prevGuiState,
+          },
+          prevActionWasRouting: false,
+        },
+      });
+
+      // save the current gui state in the global storage
+      dispatch({
+        type: ReducerActionEnum.UPDATE_GUI_STATES,
+        newGuiState: currentGuiState,
+      });
+    };
+
+    /** injects new click functionality */
     const handleClick = async (e: any) => {
       e.persist();
       if (hasLink) {
         e.stopPropagation();
       }
 
-      // call the old onClick function, such that no original functionality gets lost.
-      props.onClick && props.onClick();
+      // call the existing onClick function, such that no original functionality gets lost.
+      props.onClick && props.onClick(e);
 
       /** the GUI state after the action functionality has been executed. */
       const currentGuiState = await getCurrentGuiState(
@@ -155,11 +236,13 @@ export const HocWrapper = ({
       });
     };
 
+    // destructure element type and props
     const { props, type } = element;
 
+    /** children of element */
     let element_children = [];
 
-    //check for routes
+    //check for routes and handle possible props accordingly
     if ((element.type as Function).name === "Route") {
       if (element.props.component) {
         element_children = props.component();
@@ -177,7 +260,6 @@ export const HocWrapper = ({
       element_children,
       dispatch,
       xpathComponentId,
-      typeMap,
       parentId,
       ref
     );
@@ -187,15 +269,20 @@ export const HocWrapper = ({
       {
         // keep the original props
         ...props,
-        // change relevant properties
-
+        // change relevant properties for Routes such that they don't interfere with the children prop
         component: undefined,
         render: undefined,
         // overwrite the onClick function, such that it sends data to the global storage.
         onClick: handleClick,
         // overwrite the onSubmit function, such that it sends data to the global storage, if the element is a form.
         onSubmit: type === "form" ? handleSubmit : props.onSubmit,
+        // overwrite the onChange function, such that it sends data to the global storage, if the element is an input field.
+        onChange: type === "input" ? handleChange : props.onChange,
+        // input value used for state changes
+        inputvalue: currentInput ? currentInput : undefined,
+        // id of current element
         xpathid: xpathComponentId,
+        // ref to current element in DOM
         ref: ref,
       },
       subTree

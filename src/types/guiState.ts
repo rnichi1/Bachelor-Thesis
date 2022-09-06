@@ -25,4 +25,5 @@ export type Widget = {
   inlineStyle: CSSStyleDeclaration | undefined;
   children: Widget[] | null;
   text?: string;
+  inputValue?: string;
 };

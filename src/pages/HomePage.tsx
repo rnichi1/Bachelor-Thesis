@@ -16,7 +16,17 @@ export const HomePage = () => {
       </ComponentTest>
       <div>
         <div>and fourth</div>
-        <input />
+        <form
+          style={{
+            border: "solid 1px black",
+            maxWidth: "400px",
+            padding: "5px",
+          }}
+        >
+          <div>this is a form</div>
+          <input placeholder={"pls enter something"} />
+          <button type={"submit"}>submit</button>
+        </form>
         <input />
         <input />
       </div>
