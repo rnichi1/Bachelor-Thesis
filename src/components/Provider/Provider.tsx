@@ -225,6 +225,7 @@ export const StartWalkthroughButton = () => {
         position: "absolute",
         right: `${uiButtonPlacementRight}%`,
         top: `${uiButtonPlacement}%`,
+        zIndex: 9999,
       }}
     >
       <div

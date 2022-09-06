@@ -6,9 +6,11 @@ class ComponentTest extends React.Component {
   }
   render() {
     return (
-      <ComponentInternal>
-        <h2>Hi, I am a Car!{this.props.children}</h2>
-      </ComponentInternal>
+      <div className={"internal div"}>
+        <div>
+          <div>hi</div>
+        </div>
+      </div>
     );
   }
 }
@@ -19,7 +21,13 @@ export class ComponentInternal extends React.Component {
   }
 
   render() {
-    return <div className={"internal div"}>{this.props.children}</div>;
+    return (
+      <div className={"internal div"}>
+        <div>
+          <div>hi</div>
+        </div>
+      </div>
+    );
   }
 }
 

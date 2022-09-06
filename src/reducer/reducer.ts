@@ -90,20 +90,11 @@ export const reducer: (
       };
     case ReducerActionEnum.UPDATE_REFS:
       const refsCopy = state.refs;
-      if (!refsCopy.has(action.newRefObject?.id as string)) {
+      if (action.newRefObject?.id && action.newRefObject?.ref.current)
         refsCopy.set(
           action.newRefObject?.id as string,
           action.newRefObject?.ref as MutableRefObject<HTMLElement>
         );
-      } else {
-        const ref = refsCopy.get(action.newRefObject?.id as string);
-        if (!ref?.current) {
-          refsCopy.set(
-            action.newRefObject?.id as string,
-            action.newRefObject?.ref as MutableRefObject<HTMLElement>
-          );
-        }
-      }
 
       return {
         ...state,

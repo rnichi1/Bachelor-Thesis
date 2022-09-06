@@ -12,6 +12,7 @@ export const useGuiStateId = () => {
         return -1;
       }
 
+      /** if GUI state is new, this ID is assigned */
       let id = state.guiStates.length + 1;
 
       state.guiStates.forEach((s) => {

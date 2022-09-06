@@ -12,7 +12,7 @@ export const Routes = () => {
   return (
     <Switch>
       <Redirect exact from="/" to="/home" />
-      <Provider currentRoute={location} firstXpathId={"/html/body/div/div"}>
+      <Provider currentRoute={location} firstXpathId={"/html/body/div"}>
         <Route path="/home" component={HomePage} />
         <Route path="/project" component={SecondaryPage} />
       </Provider>

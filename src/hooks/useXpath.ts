@@ -12,14 +12,16 @@ export const useXpath = () => {
       parentRef?: React.MutableRefObject<HTMLElement>
     ) => {
       const ref: HTMLElement | undefined = parentRef?.current;
-      //TODO use for typing in xpath of components check general index and take it here type
+      let children: Element[];
       if (ref?.children) {
-        const children = Array.from(ref?.children).map((child) => {
-          console.log(child);
-        });
+        children = Array.from(ref?.children);
       }
 
+      /** map of type occurrences for building xpath indices */
       let map = new Map();
+
+      /** counts valid elements */
+      let childrenIndex = 0;
       React.Children.forEach(childrenArray, (element: React.ReactNode) => {
         if (!React.isValidElement(element)) return;
 
@@ -27,26 +29,26 @@ export const useXpath = () => {
 
         let fcChildrenType;
 
-        if (typeof type === "function") {
-          if (
-            !((type as Function).name === "Route") &&
-            !((type as Function).name === "Switch") &&
-            !((type as Function).name === "Redirect") &&
-            !((type as Function).name === "Redirect")
-          ) {
-            if (typeMap)
-              fcChildrenType = typeMap.get((type as Function).name)?.type;
-          }
+        if (
+          !((type as Function).name === "Route") &&
+          !((type as Function).name === "Switch") &&
+          !((type as Function).name === "Redirect") &&
+          children
+        ) {
+          /*if (typeMap)
+              fcChildrenType = typeMap.get((type as Function).name)?.type;*/
+          fcChildrenType = children[childrenIndex]?.localName;
         }
+        childrenIndex++;
 
         if (fcChildrenType) {
           map.set(
             fcChildrenType,
             map.has(fcChildrenType) ? map.get(fcChildrenType) + 1 : 1
           );
-        } else if (typeof type === "string") {
+        } /*else if (typeof type === "string") {
           map.set(type, map.has(type) ? map.get(type) + 1 : 1);
-        }
+        }*/
       });
 
       return map;
@@ -60,14 +62,40 @@ export const useXpath = () => {
       parentXpathId: string,
       componentIndexMap: Map<any, any>,
       currentIndexMap: Map<any, any>,
-      typeMap: Map<string | undefined, TypeMapValueType>
+      typeMap: Map<string | undefined, TypeMapValueType>,
+      childrenIndex: number,
+      parentRef?: React.MutableRefObject<HTMLElement>
     ) => {
+      const ref: HTMLElement | undefined = parentRef?.current;
+      let children: Element[] = [];
+      if (ref?.children) {
+        children = Array.from(ref?.children);
+      }
       const { type } = element;
 
       /** Type of the most outer element of a functional component */
       let fcChildrenType;
 
       if (
+        !((type as Function).name === "Route") &&
+        !((type as Function).name === "Switch") &&
+        !((type as Function).name === "Redirect") &&
+        children &&
+        children.length > 0
+      ) {
+        fcChildrenType = children[childrenIndex]?.localName;
+      }
+
+      if (
+        typeof type === "function" &&
+        ((type as Function).name === "Redirect" ||
+          (type as Function).name === "Switch" ||
+          (type as Function).name === "Route")
+      ) {
+        return parentXpathId;
+      }
+
+      /*if (
         typeof type === "function" &&
         !(type as any).prototype?.isReactComponent &&
         !((type as Function).name === "Route") &&
@@ -88,7 +116,7 @@ export const useXpath = () => {
         !!(type as any).prototype?.isReactComponent
       ) {
         return parentXpathId;
-      }
+      }*/
 
       if (typeof type === "symbol") {
         return parentXpathId;
@@ -101,12 +129,12 @@ export const useXpath = () => {
             ? currentIndexMap.get(fcChildrenType) + 1
             : 1
         );
-      } else if (typeof type === "string") {
+      } /*else if (typeof type === "string") {
         currentIndexMap.set(
           type,
           currentIndexMap.has(type) ? currentIndexMap.get(type) + 1 : 1
         );
-      }
+      }*/
 
       return fcChildrenType
         ? parentXpathId +
@@ -116,12 +144,7 @@ export const useXpath = () => {
             componentIndexMap.get(fcChildrenType) > 1
               ? "[" + currentIndexMap.get(fcChildrenType) + "]"
               : "")
-        : parentXpathId +
-            "/" +
-            type +
-            (componentIndexMap.has(type) && componentIndexMap.get(type) > 1
-              ? "[" + currentIndexMap.get(type) + "]"
-              : "");
+        : parentXpathId;
     },
     []
   );

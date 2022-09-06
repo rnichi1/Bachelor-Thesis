@@ -5,7 +5,7 @@ import { PossibleAction } from "../../types/actions";
 import { DataContext } from "./Provider";
 import { useSubTree } from "../../hooks/useSubTree";
 import { TypeMapValueType } from "../../helpers/typeMap";
-import ReactDOM from "react-dom";
+import { useGuiStateId } from "../../hooks/useGuiStateId";
 
 /** This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
  * @param children wrapped component.
@@ -73,24 +73,23 @@ export const HocWrapper = ({
     childElement = clone(children, xpathComponentId);
   }
 
-  if (typeof type === "function") {
+  /*if (typeof type === "function") {
     if (!!(type as any).prototype?.isReactComponent) {
       if (ref.current && (ReactDOM.findDOMNode(ref.current) as any)) {
         console.log(ref.current, type, ReactDOM.findDOMNode(ref.current));
       }
     }
-  }
+  }*/
 
   // save reference to dom element in global storage
   useEffect(() => {
-    if (typeof type === "function") {
-      if (
-        (type as Function).name === "Route" ||
-        (type as Function).name === "Switch" ||
-        (type as Function).name === "Redirect"
-      ) {
-        return;
-      }
+    if (
+      (type as Function).name === "Route" ||
+      (type as Function).name === "Switch" ||
+      (type as Function).name === "Redirect" ||
+      !xpathComponentId
+    ) {
+      return;
     }
 
     dispatch({
@@ -116,8 +115,7 @@ export const HocWrapper = ({
         e.stopPropagation();
       }
 
-      /** Previous state recorded by the last action */
-      const prevGuiState = state.actions[state.actions.length - 1].nextState;
+      console.log(e.target === e.currentTarget);
 
       // call the old onClick function, such that no original functionality gets lost.
       props.onClick && (await props.onClick());
@@ -129,7 +127,10 @@ export const HocWrapper = ({
         currentRoute.pathname
       );
 
-      //TODO: Here we have a bug, somehow it gets classified first as a same state but then suddenly its a new state. check first if its only the current or only prev states or bot
+      /** Previous state recorded by the last action */
+      const prevGuiState = hasLink
+        ? currentGuiState
+        : state.actions[state.actions.length - 1]?.nextState;
 
       // compute if the app routed after the click action
       const prevActionWasRouting =
@@ -169,7 +170,7 @@ export const HocWrapper = ({
       } else if (element.props.render) {
         element_children = props.render;
       } else {
-        element_children = props.children();
+        element_children = props.children;
       }
     } else {
       element_children = props.children;

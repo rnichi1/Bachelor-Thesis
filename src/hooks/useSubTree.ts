@@ -42,29 +42,43 @@ export const useSubTree = () => {
         return children;
       }
 
-      return React.Children.map(children, (element: React.ReactNode, i) => {
+      /** counts valid elements */
+      let childrenIndex = 0;
+
+      return React.Children.map(children, (element: React.ReactNode) => {
         //Check if element is an element that React can render
         if (!React.isValidElement(element)) return element;
 
         //destructure element properties
-        const { props, type } = element;
+        const { type, props } = element;
 
         const xpathComponentId = getXpathId(
           element,
           xpathId,
           componentIndexMap,
           currentIndexMap,
-          typeMap
+          typeMap,
+          childrenIndex,
+          parentRef
         );
 
+        childrenIndex++;
+
         let parentId =
-          firstXpathId || xpathComponentId === XPATH_ID_BASE
+          firstXpathId ||
+          xpathComponentId === XPATH_ID_BASE ||
+          !xpathComponentId
             ? firstXpathId
             : xpathComponentId;
 
         const linkAddedToId = xpathId + "/a";
 
-        //skip links, as they do not work with the HocWrapper, and add to id that there is a link on the children
+        //check that hasLink is only true for Link components
+        if (hasLink) {
+          hasLink = false;
+        }
+
+        // Mark links so that router actions are handled correctly.
         if (
           (type as any).displayName === "Link" ||
           (type as any).displayName === "NavLink"
@@ -81,7 +95,6 @@ export const useSubTree = () => {
               true
             )
           );*/
-          //return element;
           hasLink = true;
         }
 
@@ -219,16 +232,10 @@ export const useSubTree = () => {
 
   /** computes current gui state */
   const getCurrentGuiState = useCallback(
-    (xpathId: string | undefined, state: ReducerState, currentRoute) => {
-      console.log(
-        "getting current gui state with xpathId",
-        xpathId,
-        currentRoute
-      );
+    async (xpathId: string | undefined, state: ReducerState, currentRoute) => {
       if (!xpathId)
         return { widgets: undefined, stateId: -1, currentRoute: "" };
       const ref = state.refs.get(xpathId);
-      console.log(ref);
       let widgets_data = getGuiState(ref?.current);
       const widgets = widgets_data ? widgets_data : undefined;
       let guiState: GuiState = {
