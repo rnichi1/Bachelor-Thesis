@@ -5,7 +5,7 @@ import { PossibleAction } from "../../types/actions";
 import { DataContext } from "./Provider";
 import { useSubTree } from "../../hooks/useSubTree";
 import { TypeMapValueType } from "../../helpers/typeMap";
-import { Route } from "react-router-dom";
+import ReactDOM from "react-dom";
 
 /** This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
  * @param children wrapped component.
@@ -35,22 +35,24 @@ export const HocWrapper = ({
    const id = useId();
   */
 
-  //Hook for getting and setting persistent state
+  // Hook for getting and setting persistent state
   const { dispatch, firstParent, state, currentRoute } =
     useContext(DataContext);
 
-  //custom hooks
+  // custom hooks
   const {
     getSubTree,
     getCurrentGuiState,
     recursivelyInstantiateFunctionalComponent,
   } = useSubTree();
 
-  //create ref for element
+  /** ref for current element */
   const ref: React.MutableRefObject<HTMLElement> = useRef<any>();
 
+  // destructure type and props
   const { type, props } = children;
 
+  /** variable for childElement */
   let childElement: React.ReactNode;
 
   if (
@@ -58,12 +60,10 @@ export const HocWrapper = ({
     !props.children &&
     !(type as any).prototype?.isReactComponent
   ) {
-    //check that it is not a React Router specific component
-
-    // deep instantiate functional components
+    /** deep instantiated functional components in order to get the actual element rendered to the DOM */
     const instantiatedFc = recursivelyInstantiateFunctionalComponent(children);
 
-    // Check if instantiated functional component is an element that React can render
+    // Check if instantiated functional component is an element that React can render, if not it needs to be handled correctly
     if (!React.isValidElement(instantiatedFc) || !instantiatedFc) {
       childElement = null;
     } else {
@@ -73,15 +73,13 @@ export const HocWrapper = ({
     childElement = clone(children, xpathComponentId);
   }
 
-  /*console.log(ReactDOM.findDOMNode(ref.current) as any);
-  //TODO: use this for xpath + simple id for refs in state
-  if (ref.current) {
-    Object.values(
-      (ReactDOM.findDOMNode(ref.current) as any).parentNode.children
-    ).map((child: any) => {
-      console.log(child.localName);
-    });
-  }*/
+  if (typeof type === "function") {
+    if (!!(type as any).prototype?.isReactComponent) {
+      if (ref.current && (ReactDOM.findDOMNode(ref.current) as any)) {
+        console.log(ref.current, type, ReactDOM.findDOMNode(ref.current));
+      }
+    }
+  }
 
   // save reference to dom element in global storage
   useEffect(() => {
@@ -118,24 +116,18 @@ export const HocWrapper = ({
         e.stopPropagation();
       }
 
-      // await the recording of the GUI state before any changes are made by the original click functionality.
-      const prevGuiState = await getCurrentGuiState(
-        parentId,
-        state,
-        currentRoute.pathname
-      );
+      /** Previous state recorded by the last action */
+      const prevGuiState = state.actions[state.actions.length - 1].nextState;
 
       // call the old onClick function, such that no original functionality gets lost.
       props.onClick && (await props.onClick());
 
-      // get the GUI state after the click functionality has been executed.
+      /** the GUI state after the action functionality has been executed. */
       const currentGuiState = await getCurrentGuiState(
         parentId,
         state,
         currentRoute.pathname
       );
-
-      console.log(prevGuiState, currentGuiState);
 
       //TODO: Here we have a bug, somehow it gets classified first as a same state but then suddenly its a new state. check first if its only the current or only prev states or bot
 
@@ -190,28 +182,8 @@ export const HocWrapper = ({
       xpathComponentId,
       typeMap,
       parentId,
-      hasLink,
-      (element.type as Function).name === "Route"
+      ref
     );
-
-    if ((element.type as Function).name === "Route") {
-      return (
-        <Route
-          {...props}
-          component={null}
-          render={() => (
-            <HocWrapper
-              typeMap={typeMap}
-              xpathComponentId={xpathComponentId}
-              parentId={parentId}
-              hasLink={hasLink}
-            >
-              {props.component()}
-            </HocWrapper>
-          )}
-        />
-      );
-    }
 
     return React.cloneElement(
       element,

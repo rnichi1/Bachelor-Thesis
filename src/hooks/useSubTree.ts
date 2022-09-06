@@ -29,11 +29,11 @@ export const useSubTree = () => {
       xpathId: string,
       typeMap: Map<string | undefined, TypeMapValueType>,
       firstXpathId?: string,
-      hasLink?: boolean,
-      isRoute?: boolean
+      parentRef?: React.MutableRefObject<HTMLElement>,
+      hasLink?: boolean
     ): React.ReactNode | React.ReactNode[] => {
       /** occurrence of specific html elements inside children array (e.g. how many div elements are in the children array, how many input element, etc.) to know if brackets are needed, if it is 1 or less, the brackets are omitted in xPath. */
-      let componentIndexMap = getXpathIndexMap(children, typeMap);
+      let componentIndexMap = getXpathIndexMap(children, typeMap, parentRef);
       //keep track of count of already found html element types to write correct index in id
       let currentIndexMap = new Map();
 
@@ -62,12 +62,14 @@ export const useSubTree = () => {
             ? firstXpathId
             : xpathComponentId;
 
+        const linkAddedToId = xpathId + "/a";
+
         //skip links, as they do not work with the HocWrapper, and add to id that there is a link on the children
         if (
-          (type as unknown as { displayName: string }).displayName === "Link" ||
-          (type as unknown as { displayName: string }).displayName === "NavLink"
+          (type as any).displayName === "Link" ||
+          (type as any).displayName === "NavLink"
         ) {
-          return React.cloneElement(
+          /*return React.cloneElement(
             element,
             { ...props },
             getSubTree(
@@ -78,14 +80,15 @@ export const useSubTree = () => {
               parentId,
               true
             )
-          );
+          );*/
+          //return element;
+          hasLink = true;
         }
-        //TODO check what type elments need to be and research why routes break
 
         /** wrapped element in higher order component to add needed properties to it and call getSubTree function recursively */
         const wrappedElement = createElement(HocWrapper, {
-          element,
-          xpathComponentId,
+          children: element,
+          xpathComponentId: hasLink ? linkAddedToId : xpathComponentId,
           typeMap,
           hasLink,
           parentId,

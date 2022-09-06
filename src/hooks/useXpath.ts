@@ -1,14 +1,24 @@
 import * as React from "react";
 import { useCallback, useMemo } from "react";
 import { TypeMapValueType } from "../helpers/typeMap";
+import { Widget } from "../types/guiState";
 
 export const useXpath = () => {
   /** computes occurrence counters of specific html elements inside the children */
   const getXpathIndexMap = useCallback(
     (
       childrenArray: React.ReactNode | React.ReactNode[],
-      typeMap: Map<string | undefined, TypeMapValueType>
+      typeMap: Map<string | undefined, TypeMapValueType>,
+      parentRef?: React.MutableRefObject<HTMLElement>
     ) => {
+      const ref: HTMLElement | undefined = parentRef?.current;
+      //TODO use for typing in xpath of components check general index and take it here type
+      if (ref?.children) {
+        const children = Array.from(ref?.children).map((child) => {
+          console.log(child);
+        });
+      }
+
       let map = new Map();
       React.Children.forEach(childrenArray, (element: React.ReactNode) => {
         if (!React.isValidElement(element)) return;
@@ -77,8 +87,7 @@ export const useXpath = () => {
         typeof type === "function" &&
         !!(type as any).prototype?.isReactComponent
       ) {
-        console.log(element);
-        return parentXpathId + "/" + type.name;
+        return parentXpathId;
       }
 
       if (typeof type === "symbol") {
