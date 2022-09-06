@@ -50,7 +50,7 @@ export const useSubTree = () => {
         if (!React.isValidElement(element)) return element;
 
         //destructure element properties
-        const { type, props } = element;
+        const { type } = element;
 
         const xpathComponentId = getXpathId(
           element,
@@ -175,12 +175,13 @@ export const useSubTree = () => {
       let inlineStyleAsObject: any = {};
       let xpathComponentId: string | null = "";
       let children: Widget[] = [];
+      let text: string | null = "";
 
       if (ref && ref.localName) {
         // get xpath id
         xpathComponentId = ref.getAttribute("xpathid");
 
-        children = Array.from(ref.children).map((child) => {
+        children = Array.from(ref.childNodes).map((child) => {
           return getGuiState(child as any);
         }) as Widget[];
 
@@ -211,6 +212,8 @@ export const useSubTree = () => {
               styleAsObject[v as any] = getComputedStyle(ref)[v as any];
             });
         }
+      } else {
+        text = ref.textContent;
       }
 
       // creates a widget object for a DOM element and saves relevant information inside */
@@ -224,6 +227,7 @@ export const useSubTree = () => {
         inlineStyle: inlineStyleAsObject,
         xpos: boundingRect ? boundingRect.x : -1,
         ypos: boundingRect ? boundingRect.y : -1,
+        text: text ? text : undefined,
       };
       return widget;
     },

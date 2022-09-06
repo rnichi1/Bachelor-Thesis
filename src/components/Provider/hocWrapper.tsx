@@ -5,7 +5,6 @@ import { PossibleAction } from "../../types/actions";
 import { DataContext } from "./Provider";
 import { useSubTree } from "../../hooks/useSubTree";
 import { TypeMapValueType } from "../../helpers/typeMap";
-import { useGuiStateId } from "../../hooks/useGuiStateId";
 
 /** This wrapper provides a layer to each element and functional/class component found inside the react tree. It acts as a relay for each component and adds relevant props and a unique identifier to them so that their data can be collected.
  * @param children wrapped component.
@@ -36,8 +35,7 @@ export const HocWrapper = ({
   */
 
   // Hook for getting and setting persistent state
-  const { dispatch, firstParent, state, currentRoute } =
-    useContext(DataContext);
+  const { dispatch, state, currentRoute } = useContext(DataContext);
 
   // custom hooks
   const {
@@ -115,10 +113,8 @@ export const HocWrapper = ({
         e.stopPropagation();
       }
 
-      console.log(e.target === e.currentTarget);
-
       // call the old onClick function, such that no original functionality gets lost.
-      props.onClick && (await props.onClick());
+      props.onClick && props.onClick();
 
       /** the GUI state after the action functionality has been executed. */
       const currentGuiState = await getCurrentGuiState(

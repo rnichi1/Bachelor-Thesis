@@ -24,4 +24,5 @@ export type Widget = {
   style: CSSStyleDeclaration | undefined;
   inlineStyle: CSSStyleDeclaration | undefined;
   children: Widget[] | null;
+  text?: string;
 };

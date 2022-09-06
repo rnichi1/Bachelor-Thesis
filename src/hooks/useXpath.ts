@@ -1,7 +1,6 @@
 import * as React from "react";
 import { useCallback, useMemo } from "react";
 import { TypeMapValueType } from "../helpers/typeMap";
-import { Widget } from "../types/guiState";
 
 export const useXpath = () => {
   /** computes occurrence counters of specific html elements inside the children */

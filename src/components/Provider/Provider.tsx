@@ -1,6 +1,5 @@
 import React, {
   createContext,
-  ReactNode,
   useCallback,
   useContext,
   useReducer,
@@ -12,14 +11,11 @@ import {
   reducer,
   ReducerActionEnum,
 } from "../../reducer/reducer";
-import { usePersistedReducer } from "../../hooks/usePersistedReducer";
 import { ActionType, ReducerState } from "../../types/reducerTypes";
-import { GuiState, Widget } from "../../types/guiState";
 import { getTypeMap, TypeMapValueType } from "../../helpers/typeMap";
 import { useGuiStateId } from "../../hooks/useGuiStateId";
 import { PossibleAction } from "../../types/actions";
 import { Location } from "history";
-import { type } from "os";
 
 export const XPATH_ID_BASE = "/html/body/div";
 
@@ -58,7 +54,6 @@ const Provider = ({
   //custom hooks
   const { getSubTree, getFunctionalComponentTypes } = useSubTree();
 
-  const reducerKey = "PROVIDER_STATE";
   const [state, dispatch] = useReducer(reducer, initialState);
 
   //get type map for all functional components inside application
@@ -130,7 +125,7 @@ export const CustomLayer = ({ exampleProp }: { exampleProp: string }) => {
 
 /** Buttons for starting and ending a walkthrough and to print the collected data. They can be moved with the buttons provided, in case that they cover any relevant GUI elements. */
 export const StartWalkthroughButton = () => {
-  const { state, firstParent, typeMap, dispatch, currentRoute, firstXpathId } =
+  let { state, firstParent, typeMap, dispatch, currentRoute, firstXpathId } =
     useContext(DataContext);
 
   //custom hooks
@@ -175,6 +170,7 @@ export const StartWalkthroughButton = () => {
     typeMap,
     currentRoute.pathname,
     getGuiStateId,
+    firstXpathId,
   ]);
 
   const endWalkthrough = useCallback(async () => {
@@ -217,6 +213,7 @@ export const StartWalkthroughButton = () => {
     typeMap,
     currentRoute.pathname,
     getGuiStateId,
+    firstXpathId,
   ]);
 
   return (
