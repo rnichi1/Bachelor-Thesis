@@ -1,26 +1,40 @@
 {
-  "name": "bachelor_thesis_experiment_remus_nichiteanu",
-  "version": "0.0.1",
+  "name": "@rnichi1/bachelor-thesis-frontend",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/rnichi1"
+  },
+  "version": "0.6.0",
   "description": "A testing library for collecting UI data",
   "author": "Remus Nichiteanu",
-  "private": true,
-  "dependencies": {
+  "private": false,
+  "devDependencies": {
     "@rollup/plugin-commonjs": "^22.0.1",
     "@rollup/plugin-node-resolve": "^13.3.0",
     "@rollup/plugin-typescript": "^8.3.3",
     "@types/jest": "^27.0.1",
-    "@types/node": "^16.7.13",
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0",
-    "@types/uuid": "^8.3.4",
-    "prettier": "^2.6.2",
-    "react": "^18.1.0",
-    "react-dom": "^18.1.0",
-    "react-scripts": "5.0.1",
+    "@types/lodash": "^4.14.182",
+    "@types/node": "^18.0.3",
+    "@types/react": "^16.8.0",
+    "@types/react-dom": "^16.8.0",
+    "@types/react-router-dom": "^5.3.3",
+    "@types/uuid": "^8.0.0",
+    "history": "^4.10.1",
+    "prettier": "^2.7.1",
+    "react": "^16.8.0",
+    "react-dom": "^16.8.0",
+    "react-router-dom": "^5.2.0",
+    "react-scripts": "^5.0.0",
     "rollup": "^2.76.0",
     "rollup-plugin-dts": "^4.2.2",
-    "typescript": "^4.4.2",
-    "uuid": "^8.3.2"
+    "typescript": "^4.0.0"
+  },
+  "peerDependencies": {
+    "react": "^16.8.0",
+    "react-dom": "^16.8.0",
+    "react-router-dom": "^5.2.0"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21"
   },
   "scripts": {
     "dev": "react-scripts start",
@@ -29,6 +43,11 @@
     "eject": "react-scripts eject",
     "rollup": "rollup -c"
   },
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "files": [
+    "dist"
+  ],
   "eslintConfig": {
     "extends": [
       "react-app",
@@ -47,10 +66,5 @@
       "last 1 safari version"
     ]
   },
-  "main": "dist/cjs/index.js",
-  "module": "dist/esm/index.js",
-  "files": [
-    "dist"
-  ],
   "types": "dist/index.d.ts"
 }

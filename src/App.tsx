@@ -1,38 +1,16 @@
 import React from "react";
-import {
-  CustomButton,
-  CustomInput,
-  PrintDataButton,
-  Provider,
-} from "./components/Provider/Provider";
-import ClassComponentTest from "./components/ClassComponentTest";
+import { Routes } from "./Routes";
+import { createBrowserHistory } from "history";
+import { Router } from "react-router-dom";
 
-function handleSubmit(e: { preventDefault: () => void }) {
-  e.preventDefault();
-  console.log("You clicked submit for the original function.");
-}
+const App = () => {
+  const history = createBrowserHistory();
 
-function App() {
   return (
-    <Provider>
-      <a className="button" download="name.png">
-        Download File
-      </a>
-      <CustomButton>
-        <div>
-          <div>hello world</div>
-        </div>
-      </CustomButton>
-      <div>
-        <form onSubmit={handleSubmit}>
-          <CustomInput placeholder={"email"} />
-          <input placeholder={"password"} onInput={() => "first input"} />
-          <button type={"submit"}> submit </button>
-        </form>
-      </div>
-      <ClassComponentTest />
-    </Provider>
+    <Router history={history}>
+      <Routes />
+    </Router>
   );
-}
+};
 
 export default App;

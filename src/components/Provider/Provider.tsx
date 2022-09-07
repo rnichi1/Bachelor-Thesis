@@ -1,77 +1,50 @@
-import React, { createContext, useContext, useReducer } from "react";
+import React, { useReducer } from "react";
 import { useSubTree } from "../../hooks/useSubTree";
-import { action } from "../../types/actions";
-import {
-  initialState,
-  reducer,
-  ReducerActionEnum,
-  ReducerState,
-} from "../../reducer/reducer";
-import ErrorBoundary from "../../helpers/ErrorBoundary";
+import { initialState, reducer } from "../../reducer/reducer";
+import { Location } from "history";
+import { RecordingMenu } from "../ui/RecordingMenu";
+import { DataContext } from "../DataContext";
 
-type Props = {
+export const XPATH_ID_BASE = "/html/body/div";
+
+/** The Provider component can be used to wrap Route components or any subtree of a React application to record actions done by a user.
+ * @param currentRoute the Location object from react-router-dom must be passed into here to keep track of routes
+ * @param children
+ * @param firstXpathId the XPath of the first element in the subtree's DOM should be passed here. (You can find it by right clicking on the dom element in the developer console's inspector in Firefox and selecting copy > XPath)
+ * */
+const Provider = ({
+  currentRoute,
+  children,
+  firstXpathId,
+}: {
+  currentRoute: Location<unknown>;
+  firstXpathId: string;
   children?: React.ReactNode | React.ReactNode[];
-};
+}) => {
+  //custom hooks
+  const { injectHoc } = useSubTree();
 
-//Context to save GUI state data in global state
-export const DataContext = createContext<{
-  state: ReducerState;
-  dispatch: React.Dispatch<{
-    type: ReducerActionEnum;
-    newUserAction?: action | undefined;
-    newIdObject?: { id: string; element: React.ReactNode } | undefined;
-  }>;
-}>({ state: { actions: [], ids: new Map() }, dispatch: () => {} });
-
-const Provider = ({ children }: Props) => {
-  const { getSubTree } = useSubTree();
-
+  /** reducer initialization */
   const [state, dispatch] = useReducer(reducer, initialState);
 
   return (
     <>
-      <DataContext.Provider value={{ state, dispatch }}>
-        <PrintDataButton />
-        {children ? getSubTree(children, dispatch) : null}
+      <DataContext.Provider
+        value={{
+          state,
+          dispatch,
+          firstParent: children,
+          currentRoute,
+          firstXpathId,
+        }}
+      >
+        <RecordingMenu />
+        {children
+          ? injectHoc(children, dispatch, XPATH_ID_BASE, firstXpathId)
+          : null}
       </DataContext.Provider>
     </>
   );
-};
-
-export const CustomButton = ({ children }: Props) => {
-  return <button>{children}</button>;
-};
-
-//Button to test functionality in console (log saved state information)
-export const PrintDataButton = ({ children }: Props) => {
-  const { state } = useContext(DataContext);
-
-  return (
-    <button
-      style={{
-        position: "absolute",
-        right: 10,
-        top: 50,
-        width: "100px",
-        height: "100px",
-      }}
-      onClick={() => {
-        console.log("current action data", state.actions);
-        console.log("current component ids", state.ids);
-      }}
-    >
-      Print Data to Console
-    </button>
-  );
-};
-
-type InputProps = {
-  children?: React.ReactNode | React.ReactNode[];
-  placeholder: string;
-};
-
-export const CustomInput = ({ children, placeholder }: InputProps) => {
-  return <input placeholder={placeholder}>{children}</input>;
 };
 
 export default Provider;
