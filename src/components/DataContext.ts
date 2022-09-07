@@ -21,6 +21,7 @@ export const DataContext = createContext<{
     refs: new Map(),
     guiStates: [],
     walkthroughActive: false,
+    previousWalkthroughs: [],
   },
   dispatch: () => {},
   firstParent: undefined,

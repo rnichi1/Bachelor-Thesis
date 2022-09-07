@@ -132,7 +132,7 @@ export const HocWrapper = ({
             action: {
               actionType: PossibleAction.INPUT,
               prevStateId: prevGuiState.stateId,
-              currentGuiStateId: currentGuiState.stateId,
+              nextStateId: currentGuiState.stateId,
               elementId: xpathComponentId,
               prevState: prevGuiState,
               nextState: currentGuiState,
@@ -183,7 +183,7 @@ export const HocWrapper = ({
             action: {
               actionType: PossibleAction.SUBMIT,
               prevStateId: prevGuiState.stateId,
-              currentGuiStateId: currentGuiState.stateId,
+              nextStateId: currentGuiState.stateId,
               elementId: xpathComponentId,
               prevState: prevGuiState,
               nextState: currentGuiState,
@@ -240,7 +240,7 @@ export const HocWrapper = ({
             action: {
               actionType: hasLink ? PossibleAction.ROUTE : PossibleAction.CLICK,
               prevStateId: prevGuiState.stateId,
-              currentGuiStateId: currentGuiState.stateId,
+              nextStateId: currentGuiState.stateId,
               elementId: xpathComponentId,
               prevState: prevGuiState,
               nextState: currentGuiState,

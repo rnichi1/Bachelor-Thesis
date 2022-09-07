@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Action } from "../types/actions";
-import { ReducerState } from "../types/reducerTypes";
+import { ActionType, ReducerState } from "../types/reducerTypes";
 import { MutableRefObject } from "react";
 import { GuiState } from "../types/guiState";
 import { isEqual } from "lodash";
@@ -11,48 +11,24 @@ export const initialState: ReducerState = {
   refs: new Map(),
   guiStates: [],
   walkthroughActive: false,
+  previousWalkthroughs: [],
 };
 
-/** all the different reducer update actions that are done to update global state. */
+/** all the different reducer update actions that can be done to update global state. */
 export enum ReducerActionEnum {
   UPDATE_ACTIONS = "UPDATE_ACTIONS",
   UPDATE_REFS = "UPDATE_REFS",
   UPDATE_GUI_STATES = "UPDATE_GUI_STATES",
   START_WALKTHROUGH = "START_WALKTHROUGH",
   END_WALKTHROUGH = "END_WALKTHROUGH",
+  ADD_NEW_WALKTHROUGH = "ADD_NEW_WALKTHROUGH",
 }
 
 /** this reducer handles global state management. Actions can be dispatched with the dispatch function. */
 export const reducer: (
   state: ReducerState,
-  action: {
-    type: ReducerActionEnum;
-    newUserAction?: { action: Action; prevActionWasRouting?: boolean };
-    newIdObject?: {
-      id: string;
-      element: React.ReactNode;
-    };
-    newRefObject?: {
-      id: string;
-      ref: MutableRefObject<HTMLElement>;
-    };
-  }
-) => ReducerState = (
-  state: ReducerState,
-  action: {
-    type: ReducerActionEnum;
-    newUserAction?: { action: Action; prevActionWasRouting?: boolean };
-    newIdObject?: {
-      id: string;
-      element: React.ReactNode;
-    };
-    newRefObject?: {
-      id: string;
-      ref: MutableRefObject<HTMLElement>;
-    };
-    newGuiState?: GuiState;
-  }
-) => {
+  action: ActionType
+) => ReducerState = (state: ReducerState, action: ActionType) => {
   switch (action.type) {
     case ReducerActionEnum.UPDATE_ACTIONS:
       // check if previous action was routing to change the state of the routing action. This is required because during the routing, the refs are not available of the page that is loading. Since the last action is ending the recording, this is safe to do.
@@ -60,6 +36,8 @@ export const reducer: (
         const stateActionsCopy = [...state.actions];
         stateActionsCopy[stateActionsCopy.length - 1].nextState =
           action.newUserAction.action.nextState;
+        stateActionsCopy[stateActionsCopy.length - 1].nextStateId =
+          action.newUserAction.action.nextStateId;
 
         return {
           ...state,
@@ -109,6 +87,25 @@ export const reducer: (
         ...state,
         guiStates: guiStatesCopy,
       };
+
+    case ReducerActionEnum.ADD_NEW_WALKTHROUGH:
+      const walkthroughsCopy = state.previousWalkthroughs
+        ? [...state.previousWalkthroughs]
+        : [];
+
+      const withoutPropagatedActions = state.actions.filter((action) => {
+        return !action.wasPropagated;
+      });
+
+      if (state.actions) {
+        walkthroughsCopy.push({
+          withPropagatedActions: state.actions,
+          withoutPropagatedActions,
+          timestamp: new Date().getTime(),
+        });
+      }
+
+      return { ...state, previousWalkthroughs: walkthroughsCopy, actions: [] };
 
     case ReducerActionEnum.START_WALKTHROUGH:
       return { ...state, walkthroughActive: true };

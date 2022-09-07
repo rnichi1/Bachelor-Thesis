@@ -13,7 +13,7 @@ export type Action = {
   wasPropagated: boolean;
   elementId: string;
   prevStateId: number;
-  currentGuiStateId: number;
+  nextStateId: number;
   prevState: GuiState;
   nextState: GuiState;
   timestamp: number;

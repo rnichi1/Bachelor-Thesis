@@ -34,7 +34,7 @@ export const RecordingMenu = () => {
         action: {
           actionType: PossibleAction.START_WALKTHROUGH,
           prevStateId: initialGuiState.stateId,
-          currentGuiStateId: initialGuiState.stateId,
+          nextStateId: initialGuiState.stateId,
           elementId: "start-walkthrough-button",
           nextState: initialGuiState,
           prevState: initialGuiState,
@@ -83,7 +83,7 @@ export const RecordingMenu = () => {
         action: {
           actionType: PossibleAction.END_WALKTHROUGH,
           prevStateId: prevGuiState.stateId,
-          currentGuiStateId: finalGuiState.stateId,
+          nextStateId: finalGuiState.stateId,
           elementId: "end-walkthrough-button",
           prevState: prevGuiState,
           nextState: finalGuiState,
@@ -98,6 +98,11 @@ export const RecordingMenu = () => {
     dispatch({
       type: ReducerActionEnum.UPDATE_GUI_STATES,
       newGuiState: finalGuiState,
+    });
+
+    // save the current action sequence
+    dispatch({
+      type: ReducerActionEnum.ADD_NEW_WALKTHROUGH,
     });
   }, [
     firstParent,
@@ -132,15 +137,18 @@ export const RecordingMenu = () => {
           height: "50px",
         }}
         onClick={() => {
-          console.log("current full action sequence", state.actions);
+          console.log("current full action sequence: ", state.actions);
           console.log(
-            "current action sequence without propagated actions",
+            "current action sequence without propagated actions: ",
             state.actions.filter((a) => {
               return !a.wasPropagated;
             })
           );
-          console.log("encountered GUI States", state.guiStates);
-          console.log("is recording active", state.walkthroughActive);
+          console.log("encountered GUI States: ", state.guiStates);
+          console.log(
+            "previously recorded action sequences: ",
+            state.previousWalkthroughs
+          );
         }}
       >
         Print Data to Console
