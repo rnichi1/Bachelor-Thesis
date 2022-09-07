@@ -63,7 +63,7 @@ export const HomePage = () => {
           setShowSurprise(true);
         }}
       >
-        <button>show surprise!</button>
+        <button>show new element!</button>
       </div>
       {showSurprise && (
         <div style={FLEX_STYLE}>this is a conditionally rendered element</div>

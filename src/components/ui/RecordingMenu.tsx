@@ -33,9 +33,9 @@ export const RecordingMenu = () => {
       newUserAction: {
         action: {
           actionType: PossibleAction.START_WALKTHROUGH,
-          elementId: "start-walkthrough-button",
           prevStateId: initialGuiState.stateId,
           currentGuiStateId: initialGuiState.stateId,
+          elementId: "start-walkthrough-button",
           nextState: initialGuiState,
           prevState: initialGuiState,
           wasPropagated: false,
@@ -82,9 +82,9 @@ export const RecordingMenu = () => {
       newUserAction: {
         action: {
           actionType: PossibleAction.END_WALKTHROUGH,
-          elementId: "end-walkthrough-button",
           prevStateId: prevGuiState.stateId,
           currentGuiStateId: finalGuiState.stateId,
+          elementId: "end-walkthrough-button",
           prevState: prevGuiState,
           nextState: finalGuiState,
           wasPropagated: false,

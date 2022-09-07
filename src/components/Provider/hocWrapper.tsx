@@ -111,6 +111,7 @@ export const HocWrapper = ({
       // call the existing onChange function, such that no original functionality gets lost.
       if (props.onChange) props.onChange(e);
 
+      // set input variable
       await setCurrentInputSynchronously(e.target.value);
 
       /** the GUI state after the action functionality has been executed. */
@@ -130,9 +131,9 @@ export const HocWrapper = ({
           newUserAction: {
             action: {
               actionType: PossibleAction.INPUT,
-              elementId: xpathComponentId,
               prevStateId: prevGuiState.stateId,
               currentGuiStateId: currentGuiState.stateId,
+              elementId: xpathComponentId,
               prevState: prevGuiState,
               nextState: currentGuiState,
               wasPropagated: false,
@@ -181,9 +182,9 @@ export const HocWrapper = ({
           newUserAction: {
             action: {
               actionType: PossibleAction.SUBMIT,
-              elementId: xpathComponentId,
               prevStateId: prevGuiState.stateId,
               currentGuiStateId: currentGuiState.stateId,
+              elementId: xpathComponentId,
               prevState: prevGuiState,
               nextState: currentGuiState,
               wasPropagated: wasPropagatedEvent,
@@ -238,9 +239,9 @@ export const HocWrapper = ({
           newUserAction: {
             action: {
               actionType: hasLink ? PossibleAction.ROUTE : PossibleAction.CLICK,
-              elementId: xpathComponentId,
               prevStateId: prevGuiState.stateId,
               currentGuiStateId: currentGuiState.stateId,
+              elementId: xpathComponentId,
               prevState: prevGuiState,
               nextState: currentGuiState,
               wasPropagated: wasPropagatedEvent,
