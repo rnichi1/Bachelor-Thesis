@@ -137,13 +137,15 @@ export const RecordingMenu = () => {
           height: "50px",
         }}
         onClick={() => {
-          console.log("current full action sequence: ", state.actions);
-          console.log(
-            "current action sequence without propagated actions: ",
-            state.actions.filter((a) => {
-              return !a.wasPropagated;
-            })
-          );
+          state.walkthroughActive &&
+            console.log("current full action sequence: ", state.actions);
+          state.walkthroughActive &&
+            console.log(
+              "current action sequence without propagated actions: ",
+              state.actions.filter((a) => {
+                return !a.wasPropagated;
+              })
+            );
           console.log("encountered GUI States: ", state.guiStates);
           console.log(
             "previously recorded action sequences: ",
